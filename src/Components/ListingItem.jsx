@@ -32,7 +32,8 @@ function ListingItem({listing,id,onDelete}) {
    
                 <div className="categoryListingInfoDiv">
                       
-                    <p className="categoryListingInfoText">                       
+                    <p className="categoryListingInfoText">  
+                                     
                         {listing.seats} seats               
                     </p>
             

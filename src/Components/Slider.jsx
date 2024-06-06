@@ -20,7 +20,7 @@ function Slider() {
      useEffect(() => {
     const fetchListings = async () => {
       const listingsRef = collection(db, 'listings')
-      const q = query(listingsRef, orderBy('timestamp', 'desc'), limit(5))
+      const q = query(listingsRef, orderBy('timestamp', 'desc'), limit(10))
       const querySnap = await getDocs(q)
 
       let listings = []
@@ -53,7 +53,7 @@ function Slider() {
       <>
         <p className='exploreHeading'>Recommended</p>
 
-        <Swiper slidesPerView={1} pagination={{ clickable: true }}>
+        <Swiper slidesPerView={2} pagination={{ clickable: true }}>
           {listings.map(({ data, id }) => (
             <SwiperSlide
               key={id}

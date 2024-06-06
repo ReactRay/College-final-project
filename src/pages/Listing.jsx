@@ -41,7 +41,7 @@ if(loading){
 }
   return (
    <main>
-   <Swiper slidesPerView={1} pagination={{ clickable: true }}>
+   <Swiper slidesPerView={2} pagination={{ clickable: true }}>
         {listing.imgUrl.map((url, index) => (
           <SwiperSlide key={index}>
             <div
@@ -71,6 +71,7 @@ if(loading){
         
         <p className="listingLocation">{listing.location}</p>
         <p className="listingType">
+            
             for {listing.type === 'rent' ? 'Rent' : 'Sale'}
         </p>
         {listing.offer && (
@@ -83,6 +84,7 @@ if(loading){
             {listing.offer ? listing.discountedPrice : listing.price } ILS
         </li>
             <li>
+                
                 {listing.seats} seats
             </li>
         </ul>
