@@ -1,7 +1,7 @@
 import React from 'react'
 import {Link} from 'react-router-dom'
 import rentCategoryImage from '../assets/jpg/mercedesAmg.png'
-import sellCategoryImage from '../assets/jpg/lexusEs.png'
+import sellCategoryImage from '../assets/jpg/carshow2.jpg'
 import Slider from '../Components/Slider'
 
 function Explore() {

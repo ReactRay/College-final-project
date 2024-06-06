@@ -105,8 +105,9 @@ const onSubmit = async (e) => {
             <ArrowRightIcon fill='#ffffff' width={'34px'} height={'34px'}/>
           </button>
         </div>
+             <Link to='/sign-in' className='registerLink'> sign In Instead</Link>
             <OAuth/>
-          <Link to='/sign-in' className='registerLink'> sign In Instead</Link>
+     
        
           
       </form>

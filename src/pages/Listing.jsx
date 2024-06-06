@@ -41,7 +41,7 @@ if(loading){
 }
   return (
    <main>
-   <Swiper slidesPerView={2} pagination={{ clickable: true }}>
+   <Swiper slidesPerView={1} pagination={{ clickable: true }}>
         {listing.imgUrl.map((url, index) => (
           <SwiperSlide key={index}>
             <div

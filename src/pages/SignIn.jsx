@@ -90,11 +90,12 @@ const onSubmit = async(e) =>{
             <ArrowRightIcon fill='#ffffff' width={'34px'} height={'34px'}/>
           </button>
         </div>
-         <OAuth/>
-      </form>
-        <Link to='/sign-up' className='registerLink'>
+         <Link to='/sign-up' className='registerLink'>
           Sign Up Instead
         </Link>
+         <OAuth/>
+      </form>
+       
      
       
     </main>
