@@ -44,7 +44,7 @@ function Slider() {
   return (
     listings && (
       <>
-        <p className='exploreHeading'>Recommended</p>
+        <p className="exploreHeading">Recommended</p>
         <MySwiper listings={listings} navigate={navigate} />
       </>
     )

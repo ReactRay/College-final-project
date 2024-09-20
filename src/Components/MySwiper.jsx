@@ -3,7 +3,9 @@ import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/swiper-bundle.min.css';
 
 const MySwiper = ({ listings, navigate }) => {
-  const [slidesPerView, setSlidesPerView] = useState(window.innerWidth < 640 ? 1 : 2);
+  const [slidesPerView, setSlidesPerView] = useState(
+    window.innerWidth < 640 ? 1 : 2
+  );
 
   useEffect(() => {
     const handleResize = () => {
@@ -28,11 +30,13 @@ const MySwiper = ({ listings, navigate }) => {
               background: `url(${data.imgUrl[0]}) center no-repeat`,
               backgroundSize: 'cover',
             }}
-            className='swiperSlideDiv'
+            className="swiperSlideDiv"
           >
-            <p className='swiperSlideText'>{data.brand} {data.model}</p>
-            <p className='swiperSlidePrice'>
-              {data.discountedPrice ?? data.regularPrice} ILS{data.type === 'rent' && '/Day'}
+            <p className="swiperSlideText">
+              {data.brand} {data.model}
+            </p>
+            <p className="swiperSlidePrice">
+              {data.price} ₪{data.type === 'rent' ? ' / Day' : ''}
             </p>
           </div>
         </SwiperSlide>
