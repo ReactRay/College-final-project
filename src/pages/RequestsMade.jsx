@@ -152,6 +152,10 @@ function RequestsMade() {
       fontSize: '16px',
       marginBottom: '5px',
     },
+    status: {
+      fontWeight: 'bold',
+      color: '#007BFF',
+    },
     goBackButton: {
       padding: '10px 20px',
       fontSize: '16px',
@@ -241,6 +245,9 @@ function RequestsMade() {
                   <p style={styles.detailItem}>
                     End Date:{' '}
                     {request.data.endDate.toDate().toLocaleDateString()}
+                  </p>
+                  <p style={{ ...styles.detailItem, ...styles.status }}>
+                    Status: {request.data.status}
                   </p>
                 </div>
               </li>

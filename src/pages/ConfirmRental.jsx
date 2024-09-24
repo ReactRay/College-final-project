@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { db } from '../firebase.config';
+import { toast } from 'react-toastify';
 
 function ConfirmRental() {
   const location = useLocation();
@@ -33,6 +34,7 @@ function ConfirmRental() {
         return;
       }
 
+      // Prepare request data with status set to pending
       const requestData = {
         email: auth.currentUser.email,
         name: auth.currentUser.displayName,
@@ -44,16 +46,17 @@ function ConfirmRental() {
         sum: totalSum,
         listingRef: listing.id,
         userRef: userUid,
+        status: 'pending', // Set the initial status to pending
       };
 
       const newRequestRef = doc(db, 'requests', `${userUid}_${listing.id}`);
       await setDoc(newRequestRef, requestData);
 
-      alert('Request submitted successfully.');
+      toast.success('Request submitted successfully with status pending.');
       navigate('/');
     } catch (error) {
       console.error('Error submitting request:', error);
-      alert('Failed to submit request.');
+      toast.error('Failed to submit request.');
     }
   };
 

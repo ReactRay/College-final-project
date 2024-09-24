@@ -21,8 +21,9 @@ import ConfirmRental from './pages/ConfirmRental';
 import RequestsMade from './pages/RequestsMade';
 import AdminRequests from './pages/AdminRequests';
 import AdminListings from './pages/AdminListings';
-import Users from './pages/Users'; // Import Users page
-import UserProfile from './pages/UserProfile'; // Import UserProfile page
+import Users from './pages/Users';
+import UserProfile from './pages/UserProfile';
+import Statistics from './pages/Statistics'; // Import the Statistics page
 
 function App() {
   return (
@@ -43,45 +44,50 @@ function App() {
 
           {/* Protected Routes */}
           <Route path="/profile" element={<PrivateRoute />}>
-            <Route path="/profile" element={<Profile />} />
+            <Route index element={<Profile />} />
           </Route>
 
           <Route path="/create-listing" element={<PrivateRoute />}>
-            <Route path="/create-listing" element={<CreateListing />} />
+            <Route index element={<CreateListing />} />
           </Route>
 
           <Route path="/requests" element={<PrivateRoute />}>
-            <Route path="/requests" element={<Requests />} />
+            <Route index element={<Requests />} />
           </Route>
 
           {/* Confirm Rental Route */}
           <Route path="/confirm-rental" element={<PrivateRoute />}>
-            <Route path="/confirm-rental" element={<ConfirmRental />} />
+            <Route index element={<ConfirmRental />} />
           </Route>
 
           {/* Requests Made Page for non-admin users */}
           <Route path="/my-requests" element={<PrivateRoute />}>
-            <Route path="/my-requests" element={<RequestsMade />} />
+            <Route index element={<RequestsMade />} />
           </Route>
 
           {/* Admin Requests Page for admin users */}
           <Route path="/admin-requests" element={<PrivateRoute />}>
-            <Route path="/admin-requests" element={<AdminRequests />} />
+            <Route index element={<AdminRequests />} />
           </Route>
 
           {/* Admin Listings Page for admins */}
           <Route path="/admin-listings" element={<PrivateRoute />}>
-            <Route path="/admin-listings" element={<AdminListings />} />
+            <Route index element={<AdminListings />} />
           </Route>
 
           {/* Users Page for admins */}
           <Route path="/users" element={<PrivateRoute />}>
-            <Route path="/users" element={<Users />} />
+            <Route index element={<Users />} />
           </Route>
 
           {/* User Profile Page */}
           <Route path="/user-profile/:userId" element={<PrivateRoute />}>
-            <Route path="/user-profile/:userId" element={<UserProfile />} />
+            <Route index element={<UserProfile />} />
+          </Route>
+
+          {/* Statistics Page */}
+          <Route path="/statistics" element={<PrivateRoute />}>
+            <Route index element={<Statistics />} />
           </Route>
         </Routes>
 

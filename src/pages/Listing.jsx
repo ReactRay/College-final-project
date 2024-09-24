@@ -1,6 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { getDoc, doc } from 'firebase/firestore';
+import {
+  getDoc,
+  doc,
+  collection,
+  query,
+  where,
+  getDocs,
+} from 'firebase/firestore';
 import { db } from '../firebase.config';
 import Spinner from '../Components/Spinner';
 import ListingSwiper from '../Components/ListingSwiper';
@@ -13,6 +20,7 @@ function Listing() {
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate] = useState(new Date());
   const [ownerPhoneNumber, setOwnerPhoneNumber] = useState('');
+  const [bookedDates, setBookedDates] = useState([]);
 
   const navigate = useNavigate();
   const params = useParams();
@@ -32,6 +40,30 @@ function Listing() {
         if (userDocSnap.exists()) {
           setOwnerPhoneNumber(userDocSnap.data().phoneNumber);
         }
+
+        // Fetch active jobs to disable booked dates
+        const jobsQuery = query(
+          collection(db, 'jobs'),
+          where('listingRef', '==', params.listingId),
+          where('status', '==', 'active')
+        );
+        const jobsSnap = await getDocs(jobsQuery);
+        const datesToDisable = [];
+
+        jobsSnap.forEach((job) => {
+          const jobData = job.data();
+          const jobStart = jobData.startDate.toDate();
+          const jobEnd = jobData.endDate.toDate();
+
+          // Add each day between start and end to the disabled dates
+          let currentDate = jobStart;
+          while (currentDate <= jobEnd) {
+            datesToDisable.push(new Date(currentDate));
+            currentDate.setDate(currentDate.getDate() + 1);
+          }
+        });
+
+        setBookedDates(datesToDisable);
         setLoading(false);
       }
     };
@@ -172,6 +204,7 @@ function Listing() {
                 selected={startDate}
                 onChange={(date) => setStartDate(date)}
                 minDate={new Date()}
+                excludeDates={bookedDates}
               />
             </div>
             <div style={styles.datePicker}>
@@ -180,6 +213,7 @@ function Listing() {
                 selected={endDate}
                 onChange={(date) => setEndDate(date)}
                 minDate={startDate}
+                excludeDates={bookedDates}
               />
             </div>
             <br />
