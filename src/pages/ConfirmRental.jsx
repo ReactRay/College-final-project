@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
@@ -9,44 +9,70 @@ function ConfirmRental() {
   const location = useLocation();
   const navigate = useNavigate();
   const auth = getAuth();
-
   const { listing, startDate, endDate, totalSum } = location.state;
+
+  const paypalRef = useRef(); // Reference to the PayPal button container
+
+  useEffect(() => {
+    if (window.paypal) {
+      window.paypal
+        .Buttons({
+          createOrder: (data, actions) => {
+            return actions.order.create({
+              purchase_units: [
+                {
+                  amount: {
+                    value: totalSum, // The total amount to be charged
+                    currency_code: 'USD', // Set the currency (USD as default)
+                  },
+                },
+              ],
+            });
+          },
+          onApprove: async (data, actions) => {
+            return actions.order.capture().then(async (details) => {
+              toast.success(
+                `Payment successful for ${details.payer.name.given_name}`
+              );
+              await handleSubmitRequest(); // Proceed with the request after successful payment
+            });
+          },
+          onError: (err) => {
+            console.error('PayPal Checkout onError:', err);
+            toast.error('Payment failed. Please try again.');
+          },
+        })
+        .render(paypalRef.current);
+    }
+  }, [totalSum]);
 
   const handleSubmitRequest = async () => {
     try {
       const userUid = auth.currentUser.uid;
-
-      // Fetch phone number from Firestore
       const userDocRef = doc(db, 'users', userUid);
       const userDocSnap = await getDoc(userDocRef);
 
-      let userPhoneNumber = '';
-
-      if (userDocSnap.exists()) {
-        userPhoneNumber = userDocSnap.data().phoneNumber || '';
-        console.log('Phone number from Firestore:', userPhoneNumber);
-      } else {
-        console.warn('No user data found in Firestore for UID:', userUid);
-      }
+      let userPhoneNumber = userDocSnap.exists()
+        ? userDocSnap.data().phoneNumber
+        : '';
 
       if (!userPhoneNumber) {
         alert('No phone number found. Please update your profile.');
         return;
       }
 
-      // Prepare request data with status set to pending
       const requestData = {
         email: auth.currentUser.email,
         name: auth.currentUser.displayName,
         phoneNumber: userPhoneNumber,
         make: listing.brand,
         model: listing.model,
-        startDate: startDate,
-        endDate: endDate,
+        startDate,
+        endDate,
         sum: totalSum,
         listingRef: listing.id,
         userRef: userUid,
-        status: 'pending', // Set the initial status to pending
+        status: 'pending',
       };
 
       const newRequestRef = doc(db, 'requests', `${userUid}_${listing.id}`);
@@ -63,36 +89,16 @@ function ConfirmRental() {
   const styles = {
     container: {
       padding: '20px',
-      marginBottom: '100px', // Adjust to avoid overlap with the Navbar
       maxWidth: '400px',
       margin: '30px auto',
       border: '1px solid #ddd',
       borderRadius: '8px',
       backgroundColor: '#fff',
-      boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
     },
-    header: {
-      textAlign: 'center',
-      marginBottom: '20px',
-      fontSize: '24px',
-      fontWeight: 'bold',
-    },
-    image: {
-      width: '100%',
-      borderRadius: '8px',
-      marginBottom: '20px',
-    },
-    details: {
-      textAlign: 'center',
-      marginBottom: '20px',
-    },
-    detailItem: {
-      fontSize: '18px',
-      marginBottom: '10px',
-    },
-    buttonsContainer: {
+    buttonContainer: {
       display: 'flex',
       justifyContent: 'space-between',
+      marginTop: '20px',
     },
     button: {
       padding: '10px 20px',
@@ -102,49 +108,43 @@ function ConfirmRental() {
       cursor: 'pointer',
       backgroundColor: '#007BFF',
       color: '#fff',
-      transition: 'background-color 0.3s ease',
+      marginRight: '10px',
     },
     buttonCancel: {
       backgroundColor: '#e74c3c',
     },
-    buttonHover: {
-      backgroundColor: '#0056b3',
+    paypalButton: {
+      width: '100%',
+      marginTop: '10px',
     },
   };
 
   return (
     <div style={styles.container}>
-      <h1 style={styles.header}>Confirm Rental</h1>
-      <img src={listing.imgUrl[0]} alt={listing.brand} style={styles.image} />
-
-      <div style={styles.details}>
-        <p style={styles.detailItem}>Brand: {listing.brand}</p>
-        <p style={styles.detailItem}>Model: {listing.model}</p>
-        <p style={styles.detailItem}>Year: {listing.year}</p>
-        <p style={styles.detailItem}>Total Sum: {totalSum} ₪</p>
+      <h1>Confirm Rental</h1>
+      <img
+        src={listing.imgUrl[0]}
+        alt={listing.brand}
+        style={{ width: '100%', borderRadius: '8px', marginBottom: '20px' }}
+      />
+      <div>
+        <p>Brand: {listing.brand}</p>
+        <p>Model: {listing.model}</p>
+        <p>Year: {listing.year}</p>
+        <p>Total Sum: {totalSum} USD</p>
       </div>
-
-      <div style={styles.buttonsContainer}>
+      <div style={styles.buttonContainer}>
         <button
           onClick={() => navigate('/')}
           style={{ ...styles.button, ...styles.buttonCancel }}
         >
           Cancel
         </button>
-        <button
-          onClick={handleSubmitRequest}
-          style={styles.button}
-          onMouseOver={(e) =>
-            (e.target.style.backgroundColor =
-              styles.buttonHover.backgroundColor)
-          }
-          onMouseOut={(e) =>
-            (e.target.style.backgroundColor = styles.button.backgroundColor)
-          }
-        >
-          Submit Request
+        <button onClick={handleSubmitRequest} style={styles.button}>
+          Confirm
         </button>
       </div>
+      <div ref={paypalRef} style={styles.paypalButton}></div>
     </div>
   );
 }

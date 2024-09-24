@@ -11,7 +11,6 @@ import {
   deleteDoc,
 } from 'firebase/firestore';
 import { db } from '../firebase.config';
-import ListingItem from '../Components/ListingItem'; // Adjust the path as necessary
 import { useNavigate } from 'react-router-dom';
 
 function AdminListings() {
@@ -27,7 +26,7 @@ function AdminListings() {
       const listingsRef = collection(db, 'listings');
       const q = query(
         listingsRef,
-        where('userRef', '==', auth.currentUser.uid), // Only show listings added by the current admin
+        where('userRef', '==', auth.currentUser.uid),
         orderBy('timestamp', 'desc')
       );
       const querySnap = await getDocs(q);
@@ -66,7 +65,6 @@ function AdminListings() {
     setFilteredListings(filtered);
   };
 
-  // Function to toggle status and update Firestore
   const handleToggleStatus = async (listingId, currentStatus) => {
     const newStatus =
       currentStatus === 'available' ? 'not-available' : 'available';
@@ -75,7 +73,6 @@ function AdminListings() {
     try {
       await updateDoc(listingDocRef, { status: newStatus });
 
-      // Update local state to reflect the change immediately
       setListings((prevListings) =>
         prevListings.map((listing) =>
           listing.id === listingId
@@ -95,14 +92,12 @@ function AdminListings() {
     }
   };
 
-  // Function to delete listing and update Firestore
   const handleDeleteListing = async (listingId) => {
     const listingDocRef = doc(db, 'listings', listingId);
 
     try {
       await deleteDoc(listingDocRef);
 
-      // Update local state to remove the deleted listing
       setListings((prevListings) =>
         prevListings.filter((listing) => listing.id !== listingId)
       );
@@ -160,6 +155,49 @@ function AdminListings() {
       fontSize: '18px',
       color: '#777',
     },
+    listingItem: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: '10px',
+      border: '1px solid #ddd',
+      borderRadius: '8px',
+      marginBottom: '10px',
+      backgroundColor: '#f9f9f9',
+    },
+    image: {
+      width: '100px',
+      height: 'auto',
+      borderRadius: '8px',
+      marginRight: '10px',
+    },
+    toggleButton: {
+      padding: '10px 16px',
+      fontSize: '14px',
+      borderRadius: '20px',
+      border: '2px solid #007BFF',
+      cursor: 'pointer',
+      backgroundColor: '#f0f8ff',
+      color: '#007BFF',
+      transition: 'background-color 0.3s, color 0.3s, border-color 0.3s',
+      boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
+    },
+    toggleButtonHover: {
+      backgroundColor: '#007BFF',
+      color: '#ffffff',
+      borderColor: '#0056b3',
+    },
+    deleteButton: {
+      padding: '8px 12px',
+      fontSize: '14px',
+      borderRadius: '20px',
+      border: '2px solid #e74c3c',
+      cursor: 'pointer',
+      backgroundColor: '#fdecea',
+      color: '#e74c3c',
+      transition: 'background-color 0.3s, color 0.3s, border-color 0.3s',
+      marginLeft: '10px',
+    },
   };
 
   return (
@@ -208,14 +246,48 @@ function AdminListings() {
       ) : (
         <ul style={styles.listingList}>
           {filteredListings.map((listing) => (
-            <ListingItem
-              key={listing.id}
-              listing={listing.data}
-              id={listing.id}
-              isAdmin={auth.currentUser.email === 'raydiaz1899@gmail.com'}
-              onToggleStatus={handleToggleStatus}
-              onDelete={handleDeleteListing} // Pass the delete handler
-            />
+            <li key={listing.id} style={styles.listingItem}>
+              {listing.data.imgUrl && listing.data.imgUrl.length > 0 ? (
+                <img
+                  src={listing.data.imgUrl[0]} // Display the first image
+                  alt={listing.data.brand}
+                  style={styles.image}
+                />
+              ) : (
+                <p>No Image Available</p>
+              )}
+              <div>
+                <h3>
+                  {listing.data.brand} {listing.data.model}
+                </h3>
+                <p>Year: {listing.data.year}</p>
+                <p>Price: {listing.data.price}₪ / Day</p>
+                <p>Status: {listing.data.status}</p>
+                <p>Contact: {listing.data.phoneNumber}</p>
+              </div>
+              <div>
+                <button
+                  style={styles.toggleButton}
+                  onMouseEnter={(e) =>
+                    Object.assign(e.target.style, styles.toggleButtonHover)
+                  }
+                  onMouseLeave={(e) =>
+                    Object.assign(e.target.style, styles.toggleButton)
+                  }
+                  onClick={() =>
+                    handleToggleStatus(listing.id, listing.data.status)
+                  }
+                >
+                  Toggle Status
+                </button>
+                <button
+                  style={styles.deleteButton}
+                  onClick={() => handleDeleteListing(listing.id)}
+                >
+                  Delete
+                </button>
+              </div>
+            </li>
           ))}
         </ul>
       )}

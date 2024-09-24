@@ -51,6 +51,25 @@ function AdminRequests() {
     fetchRequests();
   }, []);
 
+  // Sort requests with pending first and others by start date
+  useEffect(() => {
+    const pendingRequests = requests.filter(
+      (req) => req.data.status === 'pending'
+    );
+    const otherRequests = requests.filter(
+      (req) => req.data.status !== 'pending'
+    );
+
+    // Sort the other requests by start date
+    otherRequests.sort(
+      (a, b) => a.data.startDate.toDate() - b.data.startDate.toDate()
+    );
+
+    // Combine pending requests first, followed by sorted other requests
+    const sortedRequests = [...pendingRequests, ...otherRequests];
+    setFilteredRequests(sortedRequests);
+  }, [requests]);
+
   // Apply filters to requests
   const applyFilters = () => {
     const { minPrice, maxPrice, startDate, endDate } = filters;
