@@ -1,70 +1,111 @@
 import React, { useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import {
+  doc,
+  setDoc,
+  collection,
+  query,
+  where,
+  getDocs,
+} from 'firebase/firestore'; // Import getDocs for querying Firestore
 import { getAuth } from 'firebase/auth';
 import { db } from '../firebase.config';
 import { toast } from 'react-toastify';
+import { v4 as uuidv4 } from 'uuid'; // Import uuid for unique ID generation
 
 function ConfirmRental() {
   const location = useLocation();
   const navigate = useNavigate();
   const auth = getAuth();
-  const { listing, startDate, endDate, totalSum } = location.state;
+  const { listing, startDate, endDate, totalSum } = location.state || {}; // Safe destructuring
 
   const paypalRef = useRef(); // Reference to the PayPal button container
 
   useEffect(() => {
-    if (window.paypal) {
-      window.paypal
-        .Buttons({
-          createOrder: (data, actions) => {
-            return actions.order.create({
-              purchase_units: [
-                {
-                  amount: {
-                    value: totalSum, // The total amount to be charged
-                    currency_code: 'USD', // Set the currency (USD as default)
+    const loadPayPalButton = () => {
+      if (window.paypal) {
+        window.paypal
+          .Buttons({
+            createOrder: (data, actions) => {
+              return actions.order.create({
+                purchase_units: [
+                  {
+                    amount: {
+                      value: totalSum, // The total amount to be charged
+                      currency_code: 'USD', // Set the currency (USD as default)
+                    },
                   },
-                },
-              ],
-            });
-          },
-          onApprove: async (data, actions) => {
-            return actions.order.capture().then(async (details) => {
-              toast.success(
-                `Payment successful for ${details.payer.name.given_name}`
-              );
-              await handleSubmitRequest(); // Proceed with the request after successful payment
-            });
-          },
-          onError: (err) => {
-            console.error('PayPal Checkout onError:', err);
-            toast.error('Payment failed. Please try again.');
-          },
-        })
-        .render(paypalRef.current);
-    }
+                ],
+              });
+            },
+            onApprove: async (data, actions) => {
+              console.log('Payment approved, capturing payment...');
+              return actions.order.capture().then(async (details) => {
+                console.log('Payment captured:', details);
+                toast.success(
+                  `Payment successful for ${details.payer.name.given_name}`
+                );
+                await handleSubmitRequest('active'); // Proceed with active status after successful payment
+              });
+            },
+            onError: (err) => {
+              console.error('PayPal Checkout onError:', err);
+              toast.error('Payment failed. Please try again.');
+            },
+          })
+          .render(paypalRef.current);
+      }
+    };
+
+    const timeout = setTimeout(() => {
+      loadPayPalButton();
+    }, 500);
+
+    return () => clearTimeout(timeout); // Cleanup timeout if component unmounts
   }, [totalSum]);
 
-  const handleSubmitRequest = async () => {
+  // Function to generate a random 5-digit confirmation number
+  const generateConfirmationNumber = () => {
+    return Math.floor(10000 + Math.random() * 90000); // Generates a number between 10000 and 99999
+  };
+
+  // Function to check if confirmation number is unique
+  const isConfirmationUnique = async (confirmationNumber) => {
+    const q = query(
+      collection(db, 'requests'),
+      where('confirmation', '==', confirmationNumber)
+    );
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.empty; // If the query returns no results, the confirmation number is unique
+  };
+
+  // Function to generate a unique confirmation number by checking existing ones in Firestore
+  const getUniqueConfirmationNumber = async () => {
+    let confirmationNumber;
+    let isUnique = false;
+    while (!isUnique) {
+      confirmationNumber = generateConfirmationNumber();
+      isUnique = await isConfirmationUnique(confirmationNumber);
+    }
+    return confirmationNumber;
+  };
+
+  // Function to submit request to Firestore
+  const handleSubmitRequest = async (status) => {
     try {
       const userUid = auth.currentUser.uid;
-      const userDocRef = doc(db, 'users', userUid);
-      const userDocSnap = await getDoc(userDocRef);
 
-      let userPhoneNumber = userDocSnap.exists()
-        ? userDocSnap.data().phoneNumber
-        : '';
+      // Generate a unique request ID
+      const requestId = uuidv4(); // Use uuid for generating unique request ID
 
-      if (!userPhoneNumber) {
-        alert('No phone number found. Please update your profile.');
-        return;
-      }
+      // Generate a unique confirmation number
+      const confirmationNumber = await getUniqueConfirmationNumber();
 
       const requestData = {
+        requestId, // Store the unique request ID
         email: auth.currentUser.email,
         name: auth.currentUser.displayName,
-        phoneNumber: userPhoneNumber,
+        phoneNumber: listing.phoneNumber,
         make: listing.brand,
         model: listing.model,
         startDate,
@@ -72,13 +113,17 @@ function ConfirmRental() {
         sum: totalSum,
         listingRef: listing.id,
         userRef: userUid,
-        status: 'pending',
+        status, // Either 'pending' for pay later or 'active' for successful payment
+        confirmation: confirmationNumber, // Add the unique confirmation number to the request
       };
 
-      const newRequestRef = doc(db, 'requests', `${userUid}_${listing.id}`);
-      await setDoc(newRequestRef, requestData);
+      console.log('Storing request in Firestore with ID:', requestId);
+      console.log('Confirmation Number:', confirmationNumber);
 
-      toast.success('Request submitted successfully with status pending.');
+      // Store the request with the generated ID in Firestore
+      await setDoc(doc(db, 'requests', requestId), requestData);
+
+      toast.success(`Request submitted successfully with status: ${status}`);
       navigate('/');
     } catch (error) {
       console.error('Error submitting request:', error);
@@ -119,6 +164,10 @@ function ConfirmRental() {
     },
   };
 
+  if (!listing) {
+    return <div>Loading listing...</div>;
+  }
+
   return (
     <div style={styles.container}>
       <h1>Confirm Rental</h1>
@@ -131,7 +180,7 @@ function ConfirmRental() {
         <p>Brand: {listing.brand}</p>
         <p>Model: {listing.model}</p>
         <p>Year: {listing.year}</p>
-        <p>Total Sum: {totalSum} USD</p>
+        <p>Total Sum: {totalSum} ILS</p>
       </div>
       <div style={styles.buttonContainer}>
         <button
@@ -140,8 +189,11 @@ function ConfirmRental() {
         >
           Cancel
         </button>
-        <button onClick={handleSubmitRequest} style={styles.button}>
-          Confirm
+        <button
+          onClick={() => handleSubmitRequest('pending')}
+          style={styles.button}
+        >
+          Pay Later
         </button>
       </div>
       <div ref={paypalRef} style={styles.paypalButton}></div>

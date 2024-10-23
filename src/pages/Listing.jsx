@@ -104,64 +104,93 @@ function Listing() {
   const isOwner = listing.userRef === params.userId;
 
   const styles = {
+    container: {
+      padding: '20px',
+      maxWidth: '1200px',
+      margin: '0 auto',
+      backgroundColor: '#fff',
+      borderRadius: '12px',
+      boxShadow: '0 2px 12px rgba(0, 0, 0, 0.1)',
+    },
     listingName: {
-      fontSize: '24px',
-      fontWeight: 'bold',
-      marginBottom: '10px',
+      fontSize: '28px',
+      fontWeight: '700',
+      marginBottom: '12px',
+      color: '#2c3e50',
     },
     listingLocation: {
-      fontSize: '16px',
-      color: '#555',
-      marginBottom: '10px',
+      fontSize: '18px',
+      color: '#7f8c8d',
+      marginBottom: '12px',
+      fontWeight: '500',
     },
     listingType: {
-      fontSize: '14px',
-      color: '#888',
-      marginBottom: '10px',
+      fontSize: '16px',
+      color: '#95a5a6',
+      marginBottom: '12px',
     },
     listingStatus: {
-      fontSize: '16px',
-      fontWeight: 'bold',
-      marginBottom: '10px',
+      fontSize: '18px',
+      fontWeight: '600',
       color: listing.status === 'available' ? '#27ae60' : '#e74c3c',
+      backgroundColor: listing.status === 'available' ? '#e9f7ef' : '#fceae9',
+      padding: '8px 16px',
+      borderRadius: '20px',
+      marginBottom: '16px',
+      display: 'inline-block',
     },
     listingDetailsList: {
       listStyleType: 'none',
       padding: 0,
       marginBottom: '20px',
+      display: 'flex',
+      gap: '20px',
+      flexWrap: 'wrap',
+    },
+    listingDetailsItem: {
+      fontSize: '16px',
+      fontWeight: '500',
+      color: '#34495e',
     },
     listingOwnerPhone: {
-      fontSize: '14px',
-      color: '#444',
+      fontSize: '16px',
+      color: '#333',
+      backgroundColor: '#f9f9f9',
+      padding: '10px',
+      borderRadius: '8px',
       marginBottom: '20px',
     },
     primaryButton: {
-      padding: '10px 20px',
+      padding: '12px 24px',
       fontSize: '16px',
-      borderRadius: '4px',
+      borderRadius: '25px',
       border: 'none',
       cursor: 'pointer',
       backgroundColor: '#007BFF',
       color: '#fff',
-      display: 'block',
-      margin: '10px 0',
       textAlign: 'center',
+      display: 'inline-block',
+      transition: 'background-color 0.3s ease',
+      ':hover': {
+        backgroundColor: '#0056b3',
+      },
     },
     rentSection: {
-      marginTop: '20px',
+      marginTop: '30px',
       padding: '20px',
-      borderRadius: '8px',
-      border: '1px solid #ddd',
+      borderRadius: '12px',
+      border: '1px solid #e0e0e0',
       backgroundColor: '#f9f9f9',
     },
     datePicker: {
       display: 'flex',
       flexDirection: 'column',
-      marginBottom: '10px',
+      marginBottom: '20px',
     },
     label: {
-      marginBottom: '5px',
-      fontWeight: 'bold',
+      marginBottom: '8px',
+      fontWeight: '600',
+      color: '#34495e',
     },
   };
 
@@ -182,7 +211,9 @@ function Listing() {
           {listing.status === 'available' ? 'Available' : 'Not Available'}
         </p>
         <ul style={styles.listingDetailsList}>
-          <li>{listing.price} ₪</li>
+          <li>Price: {listing.price} ₪ per day</li>
+          <li>Seats: {listing.seats}</li> {/* New field for seats */}
+          <li>Category: {listing.category}</li> {/* New field for category */}
         </ul>
 
         <p style={styles.listingOwnerPhone}>Owner Phone: {ownerPhoneNumber}</p>

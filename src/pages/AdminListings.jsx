@@ -17,7 +17,13 @@ function AdminListings() {
   const [listings, setListings] = useState([]);
   const [filteredListings, setFilteredListings] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState({ brand: '', model: '', year: '' });
+  const [filters, setFilters] = useState({
+    brand: '',
+    model: '',
+    year: '',
+    seats: '',
+    category: '',
+  });
   const auth = getAuth();
   const navigate = useNavigate();
 
@@ -46,23 +52,50 @@ function AdminListings() {
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
-    setFilters((prev) => ({ ...prev, [name]: value }));
+    setFilters((prevFilters) => ({ ...prevFilters, [name]: value }));
+  };
 
+  const applyFilters = () => {
     const filtered = listings.filter((listing) => {
-      const matchesBrand = listing.data.brand
-        .toLowerCase()
-        .includes(filters.brand.toLowerCase());
-      const matchesModel = listing.data.model
-        .toLowerCase()
-        .includes(filters.model.toLowerCase());
+      const matchesBrand = filters.brand
+        ? listing.data.brand.toLowerCase().includes(filters.brand.toLowerCase())
+        : true;
+      const matchesModel = filters.model
+        ? listing.data.model.toLowerCase().includes(filters.model.toLowerCase())
+        : true;
       const matchesYear = filters.year
         ? listing.data.year === filters.year
         : true;
+      const matchesSeats = filters.seats
+        ? listing.data.seats === filters.seats
+        : true;
+      const matchesCategory = filters.category
+        ? listing.data.category
+            .toLowerCase()
+            .includes(filters.category.toLowerCase())
+        : true;
 
-      return matchesBrand && matchesModel && matchesYear;
+      return (
+        matchesBrand &&
+        matchesModel &&
+        matchesYear &&
+        matchesSeats &&
+        matchesCategory
+      );
     });
 
     setFilteredListings(filtered);
+  };
+
+  const clearFilters = () => {
+    setFilters({
+      brand: '',
+      model: '',
+      year: '',
+      seats: '',
+      category: '',
+    });
+    setFilteredListings(listings); // Reset the listings to show all
   };
 
   const handleToggleStatus = async (listingId, currentStatus) => {
@@ -126,17 +159,25 @@ function AdminListings() {
     },
     filterContainer: {
       display: 'flex',
-      justifyContent: 'space-between',
+      flexWrap: 'wrap',
+      gap: '10px',
+      padding: '20px',
+      backgroundColor: '#f9f9f9',
+      borderRadius: '8px',
       marginBottom: '20px',
+    },
+    inputGroup: {
+      display: 'flex',
+      flexDirection: 'column',
+      width: '180px',
     },
     input: {
       padding: '10px',
       borderRadius: '4px',
       border: '1px solid #ccc',
-      marginRight: '10px',
-      width: '30%',
+      fontSize: '16px',
     },
-    goBackButton: {
+    filterButton: {
       padding: '10px 20px',
       fontSize: '16px',
       borderRadius: '4px',
@@ -144,7 +185,17 @@ function AdminListings() {
       cursor: 'pointer',
       backgroundColor: '#007BFF',
       color: '#fff',
-      marginBottom: '20px',
+      marginTop: '10px',
+    },
+    clearButton: {
+      padding: '10px 20px',
+      fontSize: '16px',
+      borderRadius: '4px',
+      border: 'none',
+      cursor: 'pointer',
+      backgroundColor: '#FF6347',
+      color: '#fff',
+      marginTop: '10px',
     },
     listingList: {
       listStyleType: 'none',
@@ -182,11 +233,6 @@ function AdminListings() {
       transition: 'background-color 0.3s, color 0.3s, border-color 0.3s',
       boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
     },
-    toggleButtonHover: {
-      backgroundColor: '#007BFF',
-      color: '#ffffff',
-      borderColor: '#0056b3',
-    },
     deleteButton: {
       padding: '8px 12px',
       fontSize: '14px',
@@ -195,7 +241,6 @@ function AdminListings() {
       cursor: 'pointer',
       backgroundColor: '#fdecea',
       color: '#e74c3c',
-      transition: 'background-color 0.3s, color 0.3s, border-color 0.3s',
       marginLeft: '10px',
     },
   };
@@ -206,37 +251,74 @@ function AdminListings() {
         <h1>All Listings</h1>
         <button
           onClick={() => navigate('/profile')}
-          style={styles.goBackButton}
+          style={styles.filterButton}
         >
           Go Back to Profile
         </button>
       </header>
 
       <div style={styles.filterContainer}>
-        <input
-          type="text"
-          name="brand"
-          placeholder="Filter by brand"
-          value={filters.brand}
-          onChange={handleFilterChange}
-          style={styles.input}
-        />
-        <input
-          type="text"
-          name="model"
-          placeholder="Filter by model"
-          value={filters.model}
-          onChange={handleFilterChange}
-          style={styles.input}
-        />
-        <input
-          type="text"
-          name="year"
-          placeholder="Filter by year"
-          value={filters.year}
-          onChange={handleFilterChange}
-          style={styles.input}
-        />
+        <div style={styles.inputGroup}>
+          <label>Brand</label>
+          <input
+            type="text"
+            name="brand"
+            placeholder="Brand"
+            value={filters.brand}
+            onChange={handleFilterChange}
+            style={styles.input}
+          />
+        </div>
+        <div style={styles.inputGroup}>
+          <label>Model</label>
+          <input
+            type="text"
+            name="model"
+            placeholder="Model"
+            value={filters.model}
+            onChange={handleFilterChange}
+            style={styles.input}
+          />
+        </div>
+        <div style={styles.inputGroup}>
+          <label>Year</label>
+          <input
+            type="text"
+            name="year"
+            placeholder="Year"
+            value={filters.year}
+            onChange={handleFilterChange}
+            style={styles.input}
+          />
+        </div>
+        <div style={styles.inputGroup}>
+          <label>Seats</label>
+          <input
+            type="text"
+            name="seats"
+            placeholder="Seats"
+            value={filters.seats}
+            onChange={handleFilterChange}
+            style={styles.input}
+          />
+        </div>
+        <div style={styles.inputGroup}>
+          <label>Category</label>
+          <input
+            type="text"
+            name="category"
+            placeholder="Category"
+            value={filters.category}
+            onChange={handleFilterChange}
+            style={styles.input}
+          />
+        </div>
+        <button onClick={applyFilters} style={styles.filterButton}>
+          Apply Filters
+        </button>
+        <button onClick={clearFilters} style={styles.clearButton}>
+          Clear Filters
+        </button>
       </div>
 
       {loading ? (
@@ -261,6 +343,8 @@ function AdminListings() {
                   {listing.data.brand} {listing.data.model}
                 </h3>
                 <p>Year: {listing.data.year}</p>
+                <p>Seats: {listing.data.seats}</p>
+                <p>Category: {listing.data.category}</p>
                 <p>Price: {listing.data.price}₪ / Day</p>
                 <p>Status: {listing.data.status}</p>
                 <p>Contact: {listing.data.phoneNumber}</p>
@@ -268,12 +352,6 @@ function AdminListings() {
               <div>
                 <button
                   style={styles.toggleButton}
-                  onMouseEnter={(e) =>
-                    Object.assign(e.target.style, styles.toggleButtonHover)
-                  }
-                  onMouseLeave={(e) =>
-                    Object.assign(e.target.style, styles.toggleButton)
-                  }
                   onClick={() =>
                     handleToggleStatus(listing.id, listing.data.status)
                   }

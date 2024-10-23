@@ -6,6 +6,8 @@ import {
   getDoc,
   updateDoc,
   addDoc,
+  query,
+  where,
 } from 'firebase/firestore';
 import { db } from '../firebase.config';
 
@@ -17,10 +19,11 @@ function AdminRequests() {
     maxPrice: '',
     startDate: '',
     endDate: '',
+    status: 'all',
+    confirmation: '', // New filter for confirmation number
   });
   const [loading, setLoading] = useState(true);
 
-  // Function to fetch requests
   const fetchRequests = async () => {
     setLoading(true);
     const requestsRef = collection(db, 'requests');
@@ -46,12 +49,10 @@ function AdminRequests() {
     setLoading(false);
   };
 
-  // Initial fetch
   useEffect(() => {
     fetchRequests();
   }, []);
 
-  // Sort requests with pending first and others by start date
   useEffect(() => {
     const pendingRequests = requests.filter(
       (req) => req.data.status === 'pending'
@@ -60,19 +61,17 @@ function AdminRequests() {
       (req) => req.data.status !== 'pending'
     );
 
-    // Sort the other requests by start date
     otherRequests.sort(
       (a, b) => a.data.startDate.toDate() - b.data.startDate.toDate()
     );
 
-    // Combine pending requests first, followed by sorted other requests
     const sortedRequests = [...pendingRequests, ...otherRequests];
     setFilteredRequests(sortedRequests);
   }, [requests]);
 
-  // Apply filters to requests
   const applyFilters = () => {
-    const { minPrice, maxPrice, startDate, endDate } = filters;
+    const { minPrice, maxPrice, startDate, endDate, status, confirmation } =
+      filters;
     const min = minPrice ? parseFloat(minPrice) : 0;
     const max = maxPrice ? parseFloat(maxPrice) : Infinity;
     const start = startDate ? new Date(startDate) : new Date('1970-01-01');
@@ -82,12 +81,21 @@ function AdminRequests() {
       const requestPrice = parseFloat(request.listing?.price || 0);
       const requestStart = request.data.startDate.toDate();
       const requestEnd = request.data.endDate.toDate();
+      const requestStatus = request.data.status;
+      const requestConfirmation = request.data.confirmation;
+
+      const statusMatch = status === 'all' || requestStatus === status;
+      const confirmationMatch = confirmation
+        ? requestConfirmation.toString() === confirmation
+        : true;
 
       return (
         requestPrice >= min &&
         requestPrice <= max &&
         requestStart >= start &&
-        requestEnd <= end
+        requestEnd <= end &&
+        statusMatch &&
+        confirmationMatch
       );
     });
 
@@ -121,8 +129,6 @@ function AdminRequests() {
 
       await addDoc(collection(db, 'jobs'), jobData);
       alert('Request confirmed and added to jobs.');
-
-      // Refetch requests after confirming
       fetchRequests();
     } catch (error) {
       console.error('Error confirming request:', error);
@@ -136,12 +142,38 @@ function AdminRequests() {
     try {
       await updateDoc(requestDocRef, { status: 'canceled' });
       alert('Request canceled.');
-
-      // Refetch requests after canceling
       fetchRequests();
     } catch (error) {
       console.error('Error canceling request:', error);
       alert('Failed to cancel request.');
+    }
+  };
+
+  const updateJobs = async () => {
+    try {
+      const jobsRef = collection(db, 'jobs');
+      const activeJobsQuery = query(jobsRef, where('status', '==', 'active'));
+      const activeJobsSnap = await getDocs(activeJobsQuery);
+
+      const now = new Date();
+      const batchUpdates = [];
+
+      activeJobsSnap.forEach((jobDoc) => {
+        const jobData = jobDoc.data();
+        const endDate = jobData.endDate.toDate();
+
+        if (endDate < now) {
+          const jobDocRef = doc(db, 'jobs', jobDoc.id);
+          batchUpdates.push(updateDoc(jobDocRef, { status: 'finished' }));
+        }
+      });
+
+      await Promise.all(batchUpdates);
+      alert('Updated all relevant jobs to finished.');
+      fetchRequests();
+    } catch (error) {
+      console.error('Error updating jobs:', error);
+      alert('Failed to update jobs.');
     }
   };
 
@@ -158,13 +190,15 @@ function AdminRequests() {
       display: 'flex',
       justifyContent: 'space-between',
       marginBottom: '20px',
+      flexWrap: 'wrap',
     },
     input: {
       padding: '10px',
       border: '1px solid #ccc',
       borderRadius: '4px',
       marginRight: '10px',
-      width: 'calc(25% - 10px)',
+      marginBottom: '10px',
+      width: 'calc(20% - 10px)',
     },
     requestList: {
       listStyleType: 'none',
@@ -199,6 +233,13 @@ function AdminRequests() {
     cancelButton: {
       backgroundColor: '#e74c3c',
       color: '#fff',
+    },
+    updateButton: {
+      backgroundColor: '#f39c12',
+      color: '#fff',
+      padding: '10px 20px',
+      margin: '20px 0',
+      borderRadius: '4px',
     },
   };
 
@@ -239,10 +280,34 @@ function AdminRequests() {
           onChange={handleFilterChange}
           style={styles.input}
         />
+        <input
+          type="text"
+          name="confirmation"
+          placeholder="Filter by Confirmation Number" // New filter for confirmation number
+          value={filters.confirmation}
+          onChange={handleFilterChange}
+          style={styles.input}
+        />
+        <select
+          name="status"
+          value={filters.status}
+          onChange={handleFilterChange}
+          style={styles.input}
+        >
+          <option value="all">All</option>
+          <option value="pending">Pending</option>
+          <option value="active">Active</option>
+          <option value="canceled">Canceled</option>
+          <option value="finished">Finished</option>
+        </select>
         <button style={styles.button} onClick={applyFilters}>
           Apply Filters
         </button>
       </div>
+
+      <button style={styles.updateButton} onClick={updateJobs}>
+        Update Jobs to Finished
+      </button>
 
       {loading ? (
         <p>Loading requests...</p>
@@ -273,6 +338,8 @@ function AdminRequests() {
                   Dates: {request.data.startDate.toDate().toLocaleDateString()}{' '}
                   - {request.data.endDate.toDate().toLocaleDateString()}
                 </p>
+                <p>Confirmation Number: {request.data.confirmation}</p>{' '}
+                {/* Display confirmation number */}
                 <p>Status: {request.data.status}</p>
                 {request.data.status === 'pending' && (
                   <div>

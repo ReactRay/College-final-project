@@ -14,7 +14,6 @@ function Explore() {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        // Ensure user is authenticated before fetching data
         const user = auth.currentUser;
         if (user) {
           const userRef = doc(db, 'users', user.uid);
@@ -30,17 +29,14 @@ function Explore() {
       }
     };
 
-    // Listener for authentication state changes
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         fetchUserData();
       } else {
-        // Reset state when the user logs out
         setIsAdmin(false);
       }
     });
 
-    // Cleanup listener on component unmount
     return () => unsubscribe();
   }, [auth]);
 
@@ -50,6 +46,7 @@ function Explore() {
       gap: '10px',
       marginBottom: '20px',
       justifyContent: 'center',
+      flexWrap: 'wrap',
     },
     button: {
       padding: '10px 20px',
@@ -90,6 +87,13 @@ function Explore() {
             </button>
             <button style={styles.button} onClick={() => navigate('/users')}>
               Manage Users
+            </button>
+            {/* New Button for Statistics Page */}
+            <button
+              style={styles.button}
+              onClick={() => navigate('/statistics')}
+            >
+              View Statistics
             </button>
           </div>
         )}

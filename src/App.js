@@ -1,4 +1,3 @@
-// src/App.js
 import * as React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
@@ -23,8 +22,9 @@ import AdminRequests from './pages/AdminRequests';
 import AdminListings from './pages/AdminListings';
 import Users from './pages/Users';
 import UserProfile from './pages/UserProfile';
-import Statistics from './pages/Statistics'; // Import the Statistics page
+import AdminStatistics from './pages/Statistics'; // Import the Statistics page (renamed to AdminStatistics)
 
+// The main App component
 function App() {
   return (
     <>
@@ -85,9 +85,9 @@ function App() {
             <Route index element={<UserProfile />} />
           </Route>
 
-          {/* Statistics Page */}
+          {/* Statistics Page for admins */}
           <Route path="/statistics" element={<PrivateRoute />}>
-            <Route index element={<Statistics />} />
+            <Route index element={<AdminStatistics />} />
           </Route>
         </Routes>
 

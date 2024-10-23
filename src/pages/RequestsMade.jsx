@@ -20,6 +20,7 @@ function RequestsMade() {
     model: '',
     startDate: '',
     endDate: '',
+    confirmation: '',
   });
 
   const auth = getAuth();
@@ -39,7 +40,7 @@ function RequestsMade() {
       });
 
       setRequests(fetchedRequests);
-      setFilteredRequests(fetchedRequests);
+      setFilteredRequests(fetchedRequests); // Initialize with all requests
 
       const listingData = {};
       for (const request of fetchedRequests) {
@@ -57,17 +58,10 @@ function RequestsMade() {
     fetchRequests();
   }, [auth.currentUser.uid]);
 
-  const handleFilterChange = (e) => {
-    const { name, value } = e.target;
-    setFilters((prevFilters) => ({
-      ...prevFilters,
-      [name]: value,
-    }));
-  };
-
-  const applyFilters = () => {
+  useEffect(() => {
+    // Automatically filter results when filters change
     const filtered = requests.filter((request) => {
-      const { brand, model, startDate, endDate } = filters;
+      const { brand, model, startDate, endDate, confirmation } = filters;
       const requestStartDate = request.data.startDate.toDate();
       const requestEndDate = request.data.endDate.toDate();
 
@@ -83,11 +77,28 @@ function RequestsMade() {
       const matchesEndDate = endDate
         ? requestEndDate <= new Date(endDate)
         : true;
+      const matchesConfirmation = confirmation
+        ? request.data.confirmation.toString() === confirmation
+        : true;
 
-      return matchesBrand && matchesModel && matchesStartDate && matchesEndDate;
+      return (
+        matchesBrand &&
+        matchesModel &&
+        matchesStartDate &&
+        matchesEndDate &&
+        matchesConfirmation
+      );
     });
 
     setFilteredRequests(filtered);
+  }, [filters, requests]);
+
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    setFilters((prevFilters) => ({
+      ...prevFilters,
+      [name]: value,
+    }));
   };
 
   const styles = {
@@ -108,23 +119,19 @@ function RequestsMade() {
     },
     filters: {
       display: 'flex',
-      flexDirection: 'column',
+      justifyContent: 'space-between',
       marginBottom: '20px',
+      flexWrap: 'wrap',
     },
     filterInput: {
-      marginBottom: '10px',
-      padding: '8px',
+      padding: '10px',
       borderRadius: '4px',
       border: '1px solid #ccc',
       fontSize: '14px',
-    },
-    filterButton: {
-      padding: '10px',
-      backgroundColor: '#00cc66',
-      color: '#fff',
-      border: 'none',
-      borderRadius: '4px',
-      cursor: 'pointer',
+      marginRight: '10px',
+      flexGrow: 1,
+      minWidth: '200px',
+      marginBottom: '10px',
     },
     requestList: {
       listStyleType: 'none',
@@ -208,9 +215,14 @@ function RequestsMade() {
           onChange={handleFilterChange}
           style={styles.filterInput}
         />
-        <button onClick={applyFilters} style={styles.filterButton}>
-          Apply Filters
-        </button>
+        <input
+          type="text"
+          name="confirmation"
+          placeholder="Filter by Confirmation Number"
+          value={filters.confirmation}
+          onChange={handleFilterChange}
+          style={styles.filterInput}
+        />
       </div>
 
       {/* Requests List */}
@@ -245,6 +257,9 @@ function RequestsMade() {
                   <p style={styles.detailItem}>
                     End Date:{' '}
                     {request.data.endDate.toDate().toLocaleDateString()}
+                  </p>
+                  <p style={styles.detailItem}>
+                    Confirmation Number: {request.data.confirmation}
                   </p>
                   <p style={{ ...styles.detailItem, ...styles.status }}>
                     Status: {request.data.status}

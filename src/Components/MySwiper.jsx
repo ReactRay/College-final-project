@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/swiper-bundle.min.css';
 
-const MySwiper = ({ listings, navigate }) => {
+const MySwiper = ({ listings, onClick }) => {
   const [slidesPerView, setSlidesPerView] = useState(
     window.innerWidth < 640 ? 1 : 2
   );
@@ -20,11 +20,8 @@ const MySwiper = ({ listings, navigate }) => {
 
   return (
     <Swiper slidesPerView={slidesPerView} pagination={{ clickable: true }}>
-      {listings.map(({ data, id }) => (
-        <SwiperSlide
-          key={id}
-          onClick={() => navigate(`/category/${data.type}/${id}`)}
-        >
+      {listings.map(({ id, data }) => (
+        <SwiperSlide key={id} onClick={() => onClick(id, data.type)}>
           <div
             style={{
               background: `url(${data.imgUrl[0]}) center no-repeat`,

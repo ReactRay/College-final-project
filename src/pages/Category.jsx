@@ -21,6 +21,8 @@ function Category() {
   const [name, setName] = useState('');
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
+  const [seats, setSeats] = useState('');
+  const [category, setCategory] = useState('');
 
   const params = useParams();
 
@@ -78,44 +80,88 @@ function Category() {
         const matchesMaxPrice = maxPrice
           ? parseFloat(listing.data.price) <= parseFloat(maxPrice)
           : true;
+        const matchesSeats = seats ? listing.data.seats === seats : true;
+        const matchesCategory = category
+          ? listing.data.category === category
+          : true;
 
-        return matchesName && matchesYear && matchesMinPrice && matchesMaxPrice;
+        return (
+          matchesName &&
+          matchesYear &&
+          matchesMinPrice &&
+          matchesMaxPrice &&
+          matchesSeats &&
+          matchesCategory
+        );
       });
       setFilteredListings(filtered);
     }
-  }, [name, year, minPrice, maxPrice, listings]);
+  }, [name, year, minPrice, maxPrice, seats, category, listings]);
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    setLoading(true);
+  const handleClearFilters = () => {
+    // Reset all filter values to default
+    setYear('');
+    setName('');
+    setMinPrice('');
+    setMaxPrice('');
+    setSeats('');
+    setCategory('');
+
+    // Reset filtered listings to show all available listings
+    setFilteredListings(listings);
   };
 
   const styles = {
     filterContainer: {
       display: 'flex',
-      flexDirection: 'column',
+      flexWrap: 'wrap',
+      justifyContent: 'space-between',
       gap: '10px',
       padding: '20px',
       marginBottom: '20px',
-      backgroundColor: '#f4f4f4',
-      borderRadius: '8px',
-      boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
+      backgroundColor: '#f0f4f8',
+      borderRadius: '12px',
+      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
     },
     input: {
-      padding: '10px',
-      borderRadius: '4px',
-      border: '1px solid #ddd',
+      flex: '1',
+      minWidth: '150px',
+      padding: '12px',
+      borderRadius: '8px',
+      border: '1px solid #ccc',
       fontSize: '16px',
+      backgroundColor: '#fff',
+      transition: 'border-color 0.3s ease',
+      ':focus': {
+        borderColor: '#007BFF',
+      },
+    },
+    select: {
+      flex: '1',
+      minWidth: '150px',
+      padding: '12px',
+      borderRadius: '8px',
+      border: '1px solid #ccc',
+      fontSize: '16px',
+      backgroundColor: '#fff',
+      transition: 'border-color 0.3s ease',
+      ':focus': {
+        borderColor: '#007BFF',
+      },
     },
     filterButton: {
-      padding: '10px 20px',
+      padding: '12px 24px',
       fontSize: '16px',
-      borderRadius: '4px',
+      borderRadius: '25px',
       border: 'none',
       cursor: 'pointer',
-      backgroundColor: '#00cc66',
+      backgroundColor: '#007BFF',
       color: '#fff',
-      marginTop: '10px',
+      transition: 'background-color 0.3s ease',
+      ':hover': {
+        backgroundColor: '#0056b3',
+      },
+      alignSelf: 'center',
     },
   };
 
@@ -124,7 +170,7 @@ function Category() {
       <header>
         <p className="pageHeader">Cars for rent</p>
       </header>
-      <form onSubmit={handleSearch} style={styles.filterContainer}>
+      <form style={styles.filterContainer}>
         <input
           type="text"
           placeholder="Year"
@@ -153,8 +199,31 @@ function Category() {
           onChange={(e) => setMaxPrice(e.target.value)}
           style={styles.input}
         />
-        <button type="submit" style={styles.filterButton}>
-          Search
+        <input
+          type="number"
+          placeholder="Number of Seats"
+          value={seats}
+          onChange={(e) => setSeats(e.target.value)}
+          style={styles.input}
+        />
+        <select
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+          style={styles.select}
+        >
+          <option value="">Select Category</option>
+          <option value="suv">SUV</option>
+          <option value="sedan">Sedan</option>
+          <option value="coupe">Coupe</option>
+          <option value="cabriolet">Cabriolet</option>
+          <option value="hatchback">Hatchback</option>
+        </select>
+        <button
+          type="button"
+          onClick={handleClearFilters}
+          style={styles.filterButton}
+        >
+          Clear
         </button>
       </form>
       {loading ? (

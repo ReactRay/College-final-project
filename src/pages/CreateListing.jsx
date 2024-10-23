@@ -27,10 +27,22 @@ function CreateListing() {
     price: 0,
     location: '',
     images: [],
+    seats: 5, // Changed from doors to seats
+    category: 'suv', // Category dropdown
     userRef: '',
   });
 
-  const { brand, model, year, price, location, images, userRef } = formData;
+  const {
+    brand,
+    model,
+    year,
+    price,
+    location,
+    images,
+    seats,
+    category,
+    userRef,
+  } = formData;
 
   const [loading, setLoading] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -132,13 +144,6 @@ function CreateListing() {
       setLoading(false);
       console.error('Image upload error:', error);
       toast.error('Failed to upload images. Please try again.');
-      return;
-    }
-
-    // Check if imgUrl is still undefined or empty after image upload attempt
-    if (!imgUrl || imgUrl.length === 0) {
-      setLoading(false);
-      toast.error('Failed to upload images. Please select valid images.');
       return;
     }
 
@@ -259,6 +264,35 @@ function CreateListing() {
             <p className="formPriceText">ILS / Day</p>
           </div>
 
+          {/* Add number of seats */}
+          <label className="formLabel">Number of Seats</label>
+          <input
+            className="formInputSmall"
+            type="number"
+            id="seats"
+            value={seats}
+            onChange={onMutate}
+            min="2"
+            max="7"
+            required
+          />
+
+          {/* Add category dropdown */}
+          <label className="formLabel">Category</label>
+          <select
+            className="formInputSmall"
+            id="category"
+            value={category}
+            onChange={onMutate}
+            required
+          >
+            <option value="suv">SUV</option>
+            <option value="sedan">Sedan</option>
+            <option value="coupe">Coupe</option>
+            <option value="cabriolet">Cabriolet</option>
+            <option value="hatchback">Hatchback</option>
+          </select>
+
           <label className="formLabel">Images</label>
           <p className="imagesInfo">
             The first image will be the cover (max 6).
@@ -273,6 +307,7 @@ function CreateListing() {
             multiple
             required
           />
+
           <button type="submit" className="primaryButton createListingButton">
             Create Listing
           </button>
