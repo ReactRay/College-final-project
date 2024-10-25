@@ -145,7 +145,7 @@ function AdminListings() {
   const styles = {
     container: {
       padding: '20px',
-      margin: '30px auto',
+      margin: '30px auto 80px',
       maxWidth: '1200px',
       border: '1px solid #ddd',
       borderRadius: '8px',
@@ -183,7 +183,7 @@ function AdminListings() {
       borderRadius: '4px',
       border: 'none',
       cursor: 'pointer',
-      backgroundColor: '#007BFF',
+      backgroundColor: '#00cc66', // Using #00cc66 for primary buttons
       color: '#fff',
       marginTop: '10px',
     },
@@ -226,18 +226,17 @@ function AdminListings() {
       padding: '10px 16px',
       fontSize: '14px',
       borderRadius: '20px',
-      border: '2px solid #007BFF',
+      border: '2px solid #00cc66', // Green for active/inactive
       cursor: 'pointer',
-      backgroundColor: '#f0f8ff',
-      color: '#007BFF',
+      backgroundColor: '#eaffea',
+      color: '#00cc66',
       transition: 'background-color 0.3s, color 0.3s, border-color 0.3s',
-      boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
     },
     deleteButton: {
       padding: '8px 12px',
       fontSize: '14px',
       borderRadius: '20px',
-      border: '2px solid #e74c3c',
+      border: '2px solid #e74c3c', // Red for delete
       cursor: 'pointer',
       backgroundColor: '#fdecea',
       color: '#e74c3c',

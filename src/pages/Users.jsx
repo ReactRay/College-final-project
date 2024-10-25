@@ -68,7 +68,7 @@ function Users() {
     container: {
       padding: '20px',
       maxWidth: '1200px',
-      margin: '30px auto',
+      margin: '30px auto 80px',
     },
     card: {
       border: '1px solid #ddd',

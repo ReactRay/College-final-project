@@ -57,6 +57,24 @@ function Explore() {
       color: '#fff',
       fontSize: '16px',
     },
+    imageLink: {
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      textAlign: 'center',
+      marginTop: '20px',
+    },
+    image: {
+      width: '300px',
+      height: 'auto',
+      borderRadius: '8px',
+      marginBottom: '10px',
+    },
+    imageText: {
+      fontSize: '18px',
+      fontWeight: 'bold',
+      color: '#2c2c2c',
+    },
   };
 
   return (
@@ -88,7 +106,6 @@ function Explore() {
             <button style={styles.button} onClick={() => navigate('/users')}>
               Manage Users
             </button>
-            {/* New Button for Statistics Page */}
             <button
               style={styles.button}
               onClick={() => navigate('/statistics')}
@@ -98,15 +115,14 @@ function Explore() {
           </div>
         )}
         <Slider />
-        <p className="exploreCategoryHeading">Categories</p>
-        <div className="exploreCategories">
+        <div style={styles.imageLink}>
           <Link to="/category/rent">
             <img
               src={rentCategoryImage}
-              alt="rent"
-              className="exploreCategoryImg"
+              alt="Cars for rent"
+              style={styles.image}
             />
-            <p className="exploreCategoryName">Cars for rent</p>
+            <p style={styles.imageText}>Cars for rent</p>
           </Link>
         </div>
       </main>

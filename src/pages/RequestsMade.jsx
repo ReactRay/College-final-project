@@ -106,7 +106,7 @@ function RequestsMade() {
       padding: '20px',
       marginBottom: '200px',
       maxWidth: '1000px',
-      margin: '40px auto',
+      margin: '40px auto 80px',
       border: '1px solid #ddd',
       borderRadius: '8px',
       backgroundColor: '#fff',

@@ -3,7 +3,9 @@ import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/swiper-bundle.min.css';
 
 const ListingSwiper = ({ imgUrls }) => {
-  const [slidesPerView, setSlidesPerView] = useState(window.innerWidth < 640 ? 1 : 2);
+  const [slidesPerView, setSlidesPerView] = useState(
+    window.innerWidth < 640 ? 1 : 2
+  );
 
   useEffect(() => {
     const handleResize = () => {
@@ -25,7 +27,7 @@ const ListingSwiper = ({ imgUrls }) => {
               background: `url(${url}) center no-repeat`,
               backgroundSize: 'cover',
             }}
-            className='swiperSlideDiv'
+            className="swiperSlideDiv"
           ></div>
         </SwiperSlide>
       ))}

@@ -80,7 +80,9 @@ function Category() {
         const matchesMaxPrice = maxPrice
           ? parseFloat(listing.data.price) <= parseFloat(maxPrice)
           : true;
-        const matchesSeats = seats ? listing.data.seats === seats : true;
+        const matchesSeats = seats
+          ? parseInt(listing.data.seats) === parseInt(seats) // Convert seats to integers for comparison
+          : true;
         const matchesCategory = category
           ? listing.data.category === category
           : true;

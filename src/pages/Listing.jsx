@@ -21,6 +21,7 @@ function Listing() {
   const [endDate, setEndDate] = useState(new Date());
   const [ownerPhoneNumber, setOwnerPhoneNumber] = useState('');
   const [bookedDates, setBookedDates] = useState([]);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const navigate = useNavigate();
   const params = useParams();
@@ -28,43 +29,51 @@ function Listing() {
   // Fetch listing and owner details
   useEffect(() => {
     const fetchListing = async () => {
-      const docRef = doc(db, 'listings', params.listingId);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        const listingData = docSnap.data();
-        setListing(listingData);
+      try {
+        const docRef = doc(db, 'listings', params.listingId);
+        const docSnap = await getDoc(docRef);
 
-        // Fetch owner's phone number
-        const userDocRef = doc(db, 'users', listingData.userRef);
-        const userDocSnap = await getDoc(userDocRef);
-        if (userDocSnap.exists()) {
-          setOwnerPhoneNumber(userDocSnap.data().phoneNumber);
-        }
+        if (docSnap.exists()) {
+          const listingData = docSnap.data();
+          setListing(listingData);
 
-        // Fetch active jobs to disable booked dates
-        const jobsQuery = query(
-          collection(db, 'jobs'),
-          where('listingRef', '==', params.listingId),
-          where('status', '==', 'active')
-        );
-        const jobsSnap = await getDocs(jobsQuery);
-        const datesToDisable = [];
+          // Fetch owner's phone number if userRef exists
+          if (listingData.userRef) {
+            const userDocRef = doc(db, 'users', listingData.userRef);
+            const userDocSnap = await getDoc(userDocRef);
 
-        jobsSnap.forEach((job) => {
-          const jobData = job.data();
-          const jobStart = jobData.startDate.toDate();
-          const jobEnd = jobData.endDate.toDate();
-
-          // Add each day between start and end to the disabled dates
-          let currentDate = jobStart;
-          while (currentDate <= jobEnd) {
-            datesToDisable.push(new Date(currentDate));
-            currentDate.setDate(currentDate.getDate() + 1);
+            if (userDocSnap.exists()) {
+              setOwnerPhoneNumber(userDocSnap.data().phoneNumber);
+            }
           }
-        });
 
-        setBookedDates(datesToDisable);
-        setLoading(false);
+          // Fetch active jobs to disable booked dates
+          const jobsQuery = query(
+            collection(db, 'jobs'),
+            where('listingRef', '==', params.listingId),
+            where('status', '==', 'active')
+          );
+          const jobsSnap = await getDocs(jobsQuery);
+          const datesToDisable = [];
+
+          jobsSnap.forEach((job) => {
+            const jobData = job.data();
+            const jobStart = jobData.startDate.toDate();
+            const jobEnd = jobData.endDate.toDate();
+
+            // Add each day between start and end to the disabled dates
+            let currentDate = new Date(jobStart);
+            while (currentDate <= jobEnd) {
+              datesToDisable.push(new Date(currentDate));
+              currentDate.setDate(currentDate.getDate() + 1);
+            }
+          });
+
+          setBookedDates(datesToDisable);
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Error fetching listing data:', error);
       }
     };
     fetchListing();
@@ -78,12 +87,35 @@ function Listing() {
     return (price * daysRequested).toFixed(2);
   };
 
+  // Check if any date in the range is booked
+  const isDateRangeValid = () => {
+    let currentDate = new Date(startDate);
+    while (currentDate <= endDate) {
+      if (
+        bookedDates.some(
+          (date) => date.toDateString() === currentDate.toDateString()
+        )
+      ) {
+        return false; // A booked date is found within the range
+      }
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    return true; // No booked dates within the range
+  };
+
   // Navigate to ConfirmRental page
   const handleRentCar = () => {
     if (startDate >= endDate) {
-      alert('End date must be after start date.');
+      setErrorMessage('End date must be after start date.');
       return;
     }
+
+    if (!isDateRangeValid()) {
+      setErrorMessage('Selected dates include unavailable (booked) days.');
+      return;
+    }
+
+    setErrorMessage(''); // Clear any previous error message
 
     const totalSum = calculateTotalPrice();
 
@@ -110,7 +142,7 @@ function Listing() {
       margin: '0 auto',
       backgroundColor: '#fff',
       borderRadius: '12px',
-      boxShadow: '0 2px 12px rgba(0, 0, 0, 0.1)',
+      marginBottom: '80px',
     },
     listingName: {
       fontSize: '28px',
@@ -192,6 +224,11 @@ function Listing() {
       fontWeight: '600',
       color: '#34495e',
     },
+    errorMessage: {
+      color: 'red',
+      fontWeight: 'bold',
+      marginBottom: '20px',
+    },
   };
 
   return (
@@ -247,6 +284,10 @@ function Listing() {
                 excludeDates={bookedDates}
               />
             </div>
+
+            {/* Error message display */}
+            {errorMessage && <p style={styles.errorMessage}>{errorMessage}</p>}
+
             <br />
             <button style={styles.primaryButton} onClick={handleRentCar}>
               Rent Car

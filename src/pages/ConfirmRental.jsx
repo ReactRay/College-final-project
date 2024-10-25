@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   doc,
@@ -7,19 +7,20 @@ import {
   query,
   where,
   getDocs,
-} from 'firebase/firestore'; // Import getDocs for querying Firestore
+} from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { db } from '../firebase.config';
 import { toast } from 'react-toastify';
-import { v4 as uuidv4 } from 'uuid'; // Import uuid for unique ID generation
+import { v4 as uuidv4 } from 'uuid';
 
 function ConfirmRental() {
   const location = useLocation();
   const navigate = useNavigate();
   const auth = getAuth();
-  const { listing, startDate, endDate, totalSum } = location.state || {}; // Safe destructuring
+  const { listing, startDate, endDate, totalSum } = location.state || {};
 
-  const paypalRef = useRef(); // Reference to the PayPal button container
+  const paypalRef = useRef();
+  const [numberOfDays, setNumberOfDays] = useState(0);
 
   useEffect(() => {
     const loadPayPalButton = () => {
@@ -31,21 +32,23 @@ function ConfirmRental() {
                 purchase_units: [
                   {
                     amount: {
-                      value: totalSum, // The total amount to be charged
-                      currency_code: 'USD', // Set the currency (USD as default)
+                      value: totalSum,
+                      currency_code: 'ILS', // Set currency to ILS
                     },
                   },
                 ],
               });
             },
             onApprove: async (data, actions) => {
-              console.log('Payment approved, capturing payment...');
               return actions.order.capture().then(async (details) => {
-                console.log('Payment captured:', details);
                 toast.success(
                   `Payment successful for ${details.payer.name.given_name}`
                 );
-                await handleSubmitRequest('active'); // Proceed with active status after successful payment
+                const confirmationNumber = await handleSubmitRequest('active');
+                alert(
+                  `Payment successful! Your confirmation number is: ${confirmationNumber}. Dates: ${startDate.toLocaleDateString()} to ${endDate.toLocaleDateString()} (${numberOfDays} days).`
+                );
+                navigate('/my-requests'); // Navigate to RequestsMade after alert
               });
             },
             onError: (err) => {
@@ -61,25 +64,25 @@ function ConfirmRental() {
       loadPayPalButton();
     }, 500);
 
-    return () => clearTimeout(timeout); // Cleanup timeout if component unmounts
-  }, [totalSum]);
+    // Calculate the number of days when component loads
+    setNumberOfDays(calculateNumberOfDays(startDate, endDate));
 
-  // Function to generate a random 5-digit confirmation number
+    return () => clearTimeout(timeout);
+  }, [totalSum, startDate, endDate]);
+
   const generateConfirmationNumber = () => {
-    return Math.floor(10000 + Math.random() * 90000); // Generates a number between 10000 and 99999
+    return Math.floor(10000 + Math.random() * 90000);
   };
 
-  // Function to check if confirmation number is unique
   const isConfirmationUnique = async (confirmationNumber) => {
     const q = query(
       collection(db, 'requests'),
       where('confirmation', '==', confirmationNumber)
     );
     const querySnapshot = await getDocs(q);
-    return querySnapshot.empty; // If the query returns no results, the confirmation number is unique
+    return querySnapshot.empty;
   };
 
-  // Function to generate a unique confirmation number by checking existing ones in Firestore
   const getUniqueConfirmationNumber = async () => {
     let confirmationNumber;
     let isUnique = false;
@@ -90,77 +93,114 @@ function ConfirmRental() {
     return confirmationNumber;
   };
 
-  // Function to submit request to Firestore
   const handleSubmitRequest = async (status) => {
     try {
       const userUid = auth.currentUser.uid;
 
-      // Generate a unique request ID
-      const requestId = uuidv4(); // Use uuid for generating unique request ID
+      const requestId = uuidv4();
 
-      // Generate a unique confirmation number
       const confirmationNumber = await getUniqueConfirmationNumber();
 
       const requestData = {
-        requestId, // Store the unique request ID
+        requestId,
         email: auth.currentUser.email,
         name: auth.currentUser.displayName,
         phoneNumber: listing.phoneNumber,
         make: listing.brand,
         model: listing.model,
+        category: listing.category,
         startDate,
         endDate,
         sum: totalSum,
         listingRef: listing.id,
         userRef: userUid,
-        status, // Either 'pending' for pay later or 'active' for successful payment
-        confirmation: confirmationNumber, // Add the unique confirmation number to the request
+        status,
+        confirmation: confirmationNumber,
       };
 
-      console.log('Storing request in Firestore with ID:', requestId);
-      console.log('Confirmation Number:', confirmationNumber);
-
-      // Store the request with the generated ID in Firestore
       await setDoc(doc(db, 'requests', requestId), requestData);
 
       toast.success(`Request submitted successfully with status: ${status}`);
-      navigate('/');
+      return confirmationNumber; // Return the confirmation number
     } catch (error) {
       console.error('Error submitting request:', error);
       toast.error('Failed to submit request.');
     }
   };
 
+  const calculateNumberOfDays = (start, end) => {
+    const timeDiff = end.getTime() - start.getTime();
+    const daysDiff = timeDiff / (1000 * 3600 * 24); // Convert milliseconds to days
+    return Math.ceil(daysDiff); // Round up to the nearest whole day
+  };
+
   const styles = {
     container: {
       padding: '20px',
-      maxWidth: '400px',
+      maxWidth: '500px',
       margin: '30px auto',
-      border: '1px solid #ddd',
-      borderRadius: '8px',
-      backgroundColor: '#fff',
+      borderRadius: '12px',
+      backgroundColor: '#ffffff',
+      boxShadow: '0 6px 18px rgba(0, 0, 0, 0.1)',
+    },
+    image: {
+      width: '100%',
+      borderRadius: '12px',
+      marginBottom: '20px',
+      objectFit: 'cover',
+    },
+    heading: {
+      fontSize: '28px',
+      fontWeight: 'bold',
+      color: '#2c3e50',
+      textAlign: 'center',
+      marginBottom: '20px',
+    },
+    details: {
+      marginTop: '20px',
+      backgroundColor: '#f9f9f9',
+      padding: '15px',
+      borderRadius: '12px',
+      fontSize: '16px',
+      color: '#34495e',
+      lineHeight: '1.6',
+      textAlign: 'center',
+    },
+    detailsItem: {
+      marginBottom: '10px',
+      fontWeight: '500',
+    },
+    totalSum: {
+      fontSize: '24px',
+      fontWeight: 'bold',
+      color: '#27ae60',
+      marginTop: '15px',
+      textAlign: 'center',
     },
     buttonContainer: {
       display: 'flex',
       justifyContent: 'space-between',
-      marginTop: '20px',
+      marginTop: '30px',
     },
     button: {
-      padding: '10px 20px',
+      padding: '12px 20px',
       fontSize: '16px',
-      borderRadius: '4px',
+      borderRadius: '8px',
       border: 'none',
       cursor: 'pointer',
       backgroundColor: '#007BFF',
       color: '#fff',
-      marginRight: '10px',
+      flex: 1,
+      margin: '0 5px',
+      textAlign: 'center',
+      transition: 'background-color 0.3s ease',
     },
     buttonCancel: {
       backgroundColor: '#e74c3c',
     },
     paypalButton: {
       width: '100%',
-      marginTop: '10px',
+      marginTop: '20px',
     },
   };
 
@@ -170,18 +210,25 @@ function ConfirmRental() {
 
   return (
     <div style={styles.container}>
-      <h1>Confirm Rental</h1>
-      <img
-        src={listing.imgUrl[0]}
-        alt={listing.brand}
-        style={{ width: '100%', borderRadius: '8px', marginBottom: '20px' }}
-      />
-      <div>
-        <p>Brand: {listing.brand}</p>
-        <p>Model: {listing.model}</p>
-        <p>Year: {listing.year}</p>
-        <p>Total Sum: {totalSum} ILS</p>
+      <h1 style={styles.heading}>Confirm Rental</h1>
+      <img src={listing.imgUrl[0]} alt={listing.brand} style={styles.image} />
+      <div style={styles.details}>
+        <p style={styles.detailsItem}>
+          <strong>Car:</strong> {listing.brand} {listing.model} ({listing.year})
+        </p>
+        <p style={styles.detailsItem}>
+          <strong>Rental Period:</strong> {startDate.toLocaleDateString()} to{' '}
+          {endDate.toLocaleDateString()}
+        </p>
+        <p style={styles.detailsItem}>
+          <strong>Number of Days:</strong> {numberOfDays}
+        </p>
+        <p style={styles.detailsItem}>
+          <strong>Owner Contact:</strong> {listing.phoneNumber}
+        </p>
+        <p style={styles.totalSum}>Total: {totalSum} ILS</p>
       </div>
+
       <div style={styles.buttonContainer}>
         <button
           onClick={() => navigate('/')}
@@ -190,7 +237,13 @@ function ConfirmRental() {
           Cancel
         </button>
         <button
-          onClick={() => handleSubmitRequest('pending')}
+          onClick={async () => {
+            const confirmationNumber = await handleSubmitRequest('pending');
+            alert(
+              `Your confirmation number is: ${confirmationNumber}. Dates: ${startDate.toLocaleDateString()} to ${endDate.toLocaleDateString()} (${numberOfDays} days).`
+            );
+            navigate('/my-requests'); // Navigate to RequestsMade after alert
+          }}
           style={styles.button}
         >
           Pay Later

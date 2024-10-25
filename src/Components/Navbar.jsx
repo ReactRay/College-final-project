@@ -17,11 +17,11 @@ function Navbar() {
 
   // Define the styles for the navbar, changing the position based on the current page
   const navbarStyle = {
-    position: isProfilePage ? 'sticky' : 'sticky',
+    position: isProfilePage ? 'fixed' : 'fixed',
     left: 0,
     bottom: 0,
     right: 0,
-    height: '85px',
+    maxheight: '85px',
     backgroundColor: '#ffffff',
     zIndex: 1000,
     display: 'flex',

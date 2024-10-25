@@ -20,7 +20,7 @@ function AdminRequests() {
     startDate: '',
     endDate: '',
     status: 'all',
-    confirmation: '', // New filter for confirmation number
+    confirmation: '',
   });
   const [loading, setLoading] = useState(true);
 
@@ -110,6 +110,8 @@ function AdminRequests() {
   };
 
   const confirmRequest = async (request) => {
+    const { listingRef, startDate, endDate } = request.data;
+
     const requestDocRef = doc(db, 'requests', request.id);
 
     try {
@@ -149,103 +151,116 @@ function AdminRequests() {
     }
   };
 
-  const updateJobs = async () => {
-    try {
-      const jobsRef = collection(db, 'jobs');
-      const activeJobsQuery = query(jobsRef, where('status', '==', 'active'));
-      const activeJobsSnap = await getDocs(activeJobsQuery);
-
-      const now = new Date();
-      const batchUpdates = [];
-
-      activeJobsSnap.forEach((jobDoc) => {
-        const jobData = jobDoc.data();
-        const endDate = jobData.endDate.toDate();
-
-        if (endDate < now) {
-          const jobDocRef = doc(db, 'jobs', jobDoc.id);
-          batchUpdates.push(updateDoc(jobDocRef, { status: 'finished' }));
-        }
-      });
-
-      await Promise.all(batchUpdates);
-      alert('Updated all relevant jobs to finished.');
-      fetchRequests();
-    } catch (error) {
-      console.error('Error updating jobs:', error);
-      alert('Failed to update jobs.');
-    }
-  };
-
   const styles = {
     container: {
-      padding: '20px',
-      maxWidth: '1000px',
+      padding: '30px',
+      maxWidth: '1200px',
       margin: '40px auto',
-      border: '1px solid #ddd',
-      borderRadius: '8px',
-      backgroundColor: '#fff',
+      backgroundColor: '#f9f9f9',
+      borderRadius: '10px',
+      boxShadow: '0 6px 18px rgba(0, 0, 0, 0.06)',
+    },
+    header: {
+      fontSize: '28px',
+      fontWeight: '600',
+      color: '#34495e',
+      marginBottom: '20px',
+      textAlign: 'center',
+      letterSpacing: '1px',
     },
     filters: {
       display: 'flex',
-      justifyContent: 'space-between',
-      marginBottom: '20px',
       flexWrap: 'wrap',
+      justifyContent: 'space-between',
+      marginBottom: '30px',
+      gap: '15px',
+      backgroundColor: '#fff',
+      padding: '20px',
+      borderRadius: '8px',
+      boxShadow: '0 4px 10px rgba(0, 0, 0, 0.05)',
     },
     input: {
       padding: '10px',
-      border: '1px solid #ccc',
-      borderRadius: '4px',
-      marginRight: '10px',
-      marginBottom: '10px',
-      width: 'calc(20% - 10px)',
+      flex: '1',
+      borderRadius: '6px',
+      border: '1px solid #ddd',
+      fontSize: '16px',
+      backgroundColor: '#fff',
+    },
+    filterButton: {
+      padding: '10px 18px',
+      fontSize: '16px',
+      borderRadius: '6px',
+      backgroundColor: '#2980b9',
+      color: '#fff',
+      border: 'none',
+      cursor: 'pointer',
+      transition: 'background-color 0.2s ease',
+      ':hover': {
+        backgroundColor: '#1b6ca8',
+      },
     },
     requestList: {
-      listStyleType: 'none',
+      listStyle: 'none',
       padding: 0,
     },
     requestItem: {
-      border: '1px solid #ddd',
-      borderRadius: '8px',
-      padding: '15px',
-      marginBottom: '10px',
       display: 'flex',
+      justifyContent: 'space-between',
       alignItems: 'center',
+      backgroundColor: '#fff',
+      padding: '15px 20px',
+      borderRadius: '10px',
+      marginBottom: '15px',
+      boxShadow: '0 4px 10px rgba(0, 0, 0, 0.05)',
     },
     image: {
-      width: '50%',
-      maxHeight: '200px',
+      width: '120px',
+      height: '80px',
+      objectFit: 'cover',
       borderRadius: '8px',
-      marginRight: '10px',
+      marginRight: '20px',
+    },
+    details: {
+      flex: '1',
+    },
+    detailText: {
+      fontSize: '16px',
+      color: '#2c3e50',
+      marginBottom: '6px',
+    },
+    buttons: {
+      display: 'flex',
+      gap: '10px',
     },
     button: {
-      padding: '10px 20px',
-      fontSize: '16px',
-      borderRadius: '4px',
-      border: 'none',
+      padding: '10px 16px',
+      borderRadius: '6px',
       cursor: 'pointer',
-      marginRight: '10px',
+      border: 'none',
+      fontSize: '14px',
+      transition: 'background-color 0.2s ease',
+      minWidth: '80px',
     },
     confirmButton: {
       backgroundColor: '#27ae60',
       color: '#fff',
+      ':hover': {
+        backgroundColor: '#219150',
+      },
     },
     cancelButton: {
       backgroundColor: '#e74c3c',
       color: '#fff',
-    },
-    updateButton: {
-      backgroundColor: '#f39c12',
-      color: '#fff',
-      padding: '10px 20px',
-      margin: '20px 0',
-      borderRadius: '4px',
+      ':hover': {
+        backgroundColor: '#c0392b',
+      },
     },
   };
 
   return (
     <div style={styles.container}>
-      <h1>Manage All Requests</h1>
+      <h1 style={styles.header}>Manage All Requests</h1>
 
       <div style={styles.filters}>
         <input
@@ -267,7 +282,6 @@ function AdminRequests() {
         <input
           type="date"
           name="startDate"
-          placeholder="Start Date"
           value={filters.startDate}
           onChange={handleFilterChange}
           style={styles.input}
@@ -275,7 +289,6 @@ function AdminRequests() {
         <input
           type="date"
           name="endDate"
-          placeholder="End Date"
           value={filters.endDate}
           onChange={handleFilterChange}
           style={styles.input}
@@ -283,7 +296,7 @@ function AdminRequests() {
         <input
           type="text"
           name="confirmation"
-          placeholder="Filter by Confirmation Number" // New filter for confirmation number
+          placeholder="Confirmation Number"
           value={filters.confirmation}
           onChange={handleFilterChange}
           style={styles.input}
@@ -300,14 +313,10 @@ function AdminRequests() {
           <option value="canceled">Canceled</option>
           <option value="finished">Finished</option>
         </select>
-        <button style={styles.button} onClick={applyFilters}>
+        <button onClick={applyFilters} style={styles.filterButton}>
           Apply Filters
         </button>
       </div>
-
-      <button style={styles.updateButton} onClick={updateJobs}>
-        Update Jobs to Finished
-      </button>
 
       {loading ? (
         <p>Loading requests...</p>
@@ -317,47 +326,47 @@ function AdminRequests() {
         <ul style={styles.requestList}>
           {filteredRequests.map((request) => (
             <li key={request.id} style={styles.requestItem}>
-              {request.listing &&
-              request.listing.imgUrl &&
-              request.listing.imgUrl.length > 0 ? (
-                <img
-                  src={request.listing.imgUrl[0]}
-                  alt={request.listing.brand}
-                  style={styles.image}
-                />
-              ) : (
-                <p>No Image Available</p>
-              )}
-              <div>
-                <p>
+              <img
+                src={
+                  request.listing?.imgUrl[0] ||
+                  'https://via.placeholder.com/150'
+                }
+                alt={request.listing?.brand || 'No Image'}
+                style={styles.image}
+              />
+              <div style={styles.details}>
+                <p style={styles.detailText}>
                   Car: {request.data.make} {request.data.model}
                 </p>
-                <p>Renter: {request.data.name}</p>
-                <p>Phone: {request.data.phoneNumber}</p>
-                <p>
+                <p style={styles.detailText}>Renter: {request.data.name}</p>
+                <p style={styles.detailText}>
+                  Phone: {request.data.phoneNumber}
+                </p>
+                <p style={styles.detailText}>
                   Dates: {request.data.startDate.toDate().toLocaleDateString()}{' '}
                   - {request.data.endDate.toDate().toLocaleDateString()}
                 </p>
-                <p>Confirmation Number: {request.data.confirmation}</p>{' '}
-                {/* Display confirmation number */}
-                <p>Status: {request.data.status}</p>
-                {request.data.status === 'pending' && (
-                  <div>
-                    <button
-                      style={{ ...styles.button, ...styles.confirmButton }}
-                      onClick={() => confirmRequest(request)}
-                    >
-                      Confirm
-                    </button>
-                    <button
-                      style={{ ...styles.button, ...styles.cancelButton }}
-                      onClick={() => cancelRequest(request.id)}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                )}
+                <p style={styles.detailText}>
+                  Confirmation Number: {request.data.confirmation}
+                </p>
+                <p style={styles.detailText}>Status: {request.data.status}</p>
               </div>
+              {request.data.status === 'pending' && (
+                <div style={styles.buttons}>
+                  <button
+                    onClick={() => confirmRequest(request)}
+                    style={{ ...styles.button, ...styles.confirmButton }}
+                  >
+                    Confirm
+                  </button>
+                  <button
+                    onClick={() => cancelRequest(request.id)}
+                    style={{ ...styles.button, ...styles.cancelButton }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
             </li>
           ))}
         </ul>
