@@ -47,23 +47,23 @@ function Listing() {
             }
           }
 
-          // Fetch active jobs to disable booked dates
-          const jobsQuery = query(
-            collection(db, 'jobs'),
+          // Fetch active requests to disable booked dates
+          const requestsQuery = query(
+            collection(db, 'requests'),
             where('listingRef', '==', params.listingId),
             where('status', '==', 'active')
           );
-          const jobsSnap = await getDocs(jobsQuery);
+          const requestsSnap = await getDocs(requestsQuery);
           const datesToDisable = [];
 
-          jobsSnap.forEach((job) => {
-            const jobData = job.data();
-            const jobStart = jobData.startDate.toDate();
-            const jobEnd = jobData.endDate.toDate();
+          requestsSnap.forEach((request) => {
+            const requestData = request.data();
+            const requestStart = requestData.startDate.toDate();
+            const requestEnd = requestData.endDate.toDate();
 
             // Add each day between start and end to the disabled dates
-            let currentDate = new Date(jobStart);
-            while (currentDate <= jobEnd) {
+            let currentDate = new Date(requestStart);
+            while (currentDate <= requestEnd) {
               datesToDisable.push(new Date(currentDate));
               currentDate.setDate(currentDate.getDate() + 1);
             }

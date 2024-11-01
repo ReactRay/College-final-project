@@ -70,9 +70,7 @@ function AdminListings() {
         ? listing.data.seats === filters.seats
         : true;
       const matchesCategory = filters.category
-        ? listing.data.category
-            .toLowerCase()
-            .includes(filters.category.toLowerCase())
+        ? listing.data.category.toLowerCase() === filters.category.toLowerCase()
         : true;
 
       return (
@@ -303,14 +301,19 @@ function AdminListings() {
         </div>
         <div style={styles.inputGroup}>
           <label>Category</label>
-          <input
-            type="text"
+          <select
             name="category"
-            placeholder="Category"
             value={filters.category}
             onChange={handleFilterChange}
             style={styles.input}
-          />
+          >
+            <option value="">Select Category</option>
+            <option value="suv">SUV</option>
+            <option value="sedan">Sedan</option>
+            <option value="coupe">Coupe</option>
+            <option value="cabriolet">Cabriolet</option>
+            <option value="hatchback">Hatchback</option>
+          </select>
         </div>
         <button onClick={applyFilters} style={styles.filterButton}>
           Apply Filters

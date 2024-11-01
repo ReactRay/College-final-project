@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useLocation } from 'react-router-dom';
 import {
   collection,
   getDocs,
@@ -12,6 +12,8 @@ import { db } from '../firebase.config';
 import { toast } from 'react-toastify';
 import Spinner from '../Components/Spinner';
 import ListingItem from '../Components/ListingItem';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 
 function Category() {
   const [listings, setListings] = useState(null);
@@ -23,16 +25,27 @@ function Category() {
   const [maxPrice, setMaxPrice] = useState('');
   const [seats, setSeats] = useState('');
   const [category, setCategory] = useState('');
+  const [startDate, setStartDate] = useState(null);
+  const [endDate, setEndDate] = useState(null);
 
   const params = useParams();
+  const location = useLocation();
+
+  useEffect(() => {
+    // Extract date filters from URL query parameters
+    const queryParams = new URLSearchParams(location.search);
+    const start = queryParams.get('startDate');
+    const end = queryParams.get('endDate');
+
+    if (start) setStartDate(new Date(start));
+    if (end) setEndDate(new Date(end));
+  }, [location.search]);
 
   useEffect(() => {
     const fetchListings = async () => {
       setLoading(true);
       try {
         const listingsRef = collection(db, 'listings');
-
-        // Fetch all listings of the specified category
         const q = query(
           listingsRef,
           where('type', '==', params.categoryName),
@@ -41,7 +54,6 @@ function Category() {
         );
 
         const querySnap = await getDocs(q);
-
         let listings = [];
         querySnap.forEach((doc) => {
           listings.push({
@@ -68,6 +80,44 @@ function Category() {
   }, [params.categoryName]);
 
   useEffect(() => {
+    const filterByDateAvailability = async () => {
+      if (listings && startDate && endDate) {
+        const unavailableListings = new Set();
+
+        for (const listing of listings) {
+          const requestsQuery = query(
+            collection(db, 'requests'),
+            where('listingRef', '==', listing.id),
+            where('status', '==', 'active')
+          );
+
+          const requestsSnap = await getDocs(requestsQuery);
+
+          requestsSnap.forEach((requestDoc) => {
+            const requestData = requestDoc.data();
+            const requestStart = requestData.startDate.toDate();
+            const requestEnd = requestData.endDate.toDate();
+
+            if (startDate <= requestEnd && endDate >= requestStart) {
+              unavailableListings.add(listing.id);
+            }
+          });
+        }
+
+        const availableListings = listings.filter(
+          (listing) => !unavailableListings.has(listing.id)
+        );
+
+        setFilteredListings(availableListings);
+      } else {
+        setFilteredListings(listings);
+      }
+    };
+
+    filterByDateAvailability();
+  }, [startDate, endDate, listings]);
+
+  useEffect(() => {
     if (listings) {
       const filtered = listings.filter((listing) => {
         const matchesName = name
@@ -81,7 +131,7 @@ function Category() {
           ? parseFloat(listing.data.price) <= parseFloat(maxPrice)
           : true;
         const matchesSeats = seats
-          ? parseInt(listing.data.seats) === parseInt(seats) // Convert seats to integers for comparison
+          ? parseInt(listing.data.seats) === parseInt(seats)
           : true;
         const matchesCategory = category
           ? listing.data.category === category
@@ -101,23 +151,21 @@ function Category() {
   }, [name, year, minPrice, maxPrice, seats, category, listings]);
 
   const handleClearFilters = () => {
-    // Reset all filter values to default
     setYear('');
     setName('');
     setMinPrice('');
     setMaxPrice('');
     setSeats('');
     setCategory('');
-
-    // Reset filtered listings to show all available listings
+    setStartDate(null);
+    setEndDate(null);
     setFilteredListings(listings);
   };
 
   const styles = {
     filterContainer: {
-      display: 'flex',
-      flexWrap: 'wrap',
-      justifyContent: 'space-between',
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
       gap: '10px',
       padding: '20px',
       marginBottom: '20px',
@@ -126,51 +174,53 @@ function Category() {
       boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
     },
     input: {
-      flex: '1',
-      minWidth: '150px',
-      padding: '12px',
-      borderRadius: '8px',
-      border: '1px solid #ccc',
+      padding: '8px',
+      borderRadius: '6px',
+      border: '1px solid #ddd',
       fontSize: '16px',
-      backgroundColor: '#fff',
-      transition: 'border-color 0.3s ease',
-      ':focus': {
-        borderColor: '#007BFF',
-      },
+      width: '100%',
+      boxSizing: 'border-box',
     },
     select: {
-      flex: '1',
-      minWidth: '150px',
-      padding: '12px',
-      borderRadius: '8px',
-      border: '1px solid #ccc',
+      padding: '8px',
+      borderRadius: '6px',
+      border: '1px solid #ddd',
       fontSize: '16px',
-      backgroundColor: '#fff',
-      transition: 'border-color 0.3s ease',
-      ':focus': {
-        borderColor: '#007BFF',
-      },
+      width: '100%',
+      boxSizing: 'border-box',
     },
     filterButton: {
-      padding: '12px 24px',
+      padding: '10px',
       fontSize: '16px',
-      borderRadius: '25px',
-      border: 'none',
-      cursor: 'pointer',
-      backgroundColor: '#007BFF',
+      borderRadius: '6px',
+      backgroundColor: '#00cc66',
       color: '#fff',
-      transition: 'background-color 0.3s ease',
-      ':hover': {
-        backgroundColor: '#0056b3',
-      },
-      alignSelf: 'center',
+      cursor: 'pointer',
+      textAlign: 'center',
+      border: 'none',
+    },
+    clearButton: {
+      padding: '10px',
+      fontSize: '16px',
+      borderRadius: '6px',
+      backgroundColor: '#FF6347',
+      color: '#fff',
+      cursor: 'pointer',
+      textAlign: 'center',
+      border: 'none',
+    },
+    pageHeader: {
+      fontSize: '24px',
+      fontWeight: 'bold',
+      marginBottom: '20px',
+      textAlign: 'center',
     },
   };
 
   return (
     <div className="category">
       <header>
-        <p className="pageHeader">Cars for rent</p>
+        <p style={styles.pageHeader}>Cars for rent</p>
       </header>
       <form style={styles.filterContainer}>
         <input
@@ -220,10 +270,29 @@ function Category() {
           <option value="cabriolet">Cabriolet</option>
           <option value="hatchback">Hatchback</option>
         </select>
+        <DatePicker
+          selected={startDate}
+          onChange={(date) => setStartDate(date)}
+          selectsStart
+          startDate={startDate}
+          endDate={endDate}
+          placeholderText="Start Date"
+          style={styles.input}
+        />
+        <DatePicker
+          selected={endDate}
+          onChange={(date) => setEndDate(date)}
+          selectsEnd
+          startDate={startDate}
+          endDate={endDate}
+          minDate={startDate}
+          placeholderText="End Date"
+          style={styles.input}
+        />
         <button
           type="button"
           onClick={handleClearFilters}
-          style={styles.filterButton}
+          style={styles.clearButton}
         >
           Clear
         </button>

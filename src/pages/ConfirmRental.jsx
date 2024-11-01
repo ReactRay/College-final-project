@@ -138,7 +138,7 @@ function ConfirmRental() {
     container: {
       padding: '20px',
       maxWidth: '500px',
-      margin: '30px auto',
+      margin: '30px auto 200px',
       borderRadius: '12px',
       backgroundColor: '#ffffff',
       boxShadow: '0 6px 18px rgba(0, 0, 0, 0.1)',
