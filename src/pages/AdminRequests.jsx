@@ -108,7 +108,36 @@ function AdminRequests() {
 
   const confirmRequest = async (request) => {
     const { listingRef, startDate, endDate } = request.data;
+    const start = startDate.toDate();
+    const end = endDate.toDate();
 
+    // Query Firestore for all active requests with the same listingRef
+    const requestsRef = collection(db, 'requests');
+    const conflictingQuery = query(
+      requestsRef,
+      where('listingRef', '==', listingRef),
+      where('status', '==', 'active')
+    );
+
+    const conflictingSnap = await getDocs(conflictingQuery);
+
+    // Check for overlapping dates within the fetched documents
+    const conflicts = conflictingSnap.docs.some((doc) => {
+      const requestData = doc.data();
+      const activeStart = requestData.startDate.toDate();
+      const activeEnd = requestData.endDate.toDate();
+      return start <= activeEnd && end >= activeStart; // Overlap condition
+    });
+
+    if (conflicts) {
+      // Conflict found, prevent confirmation
+      alert(
+        'Cannot confirm this request. There is already an active booking for this car that overlaps with the selected dates.'
+      );
+      return;
+    }
+
+    // No conflict, proceed with the confirmation
     const requestDocRef = doc(db, 'requests', request.id);
 
     try {
