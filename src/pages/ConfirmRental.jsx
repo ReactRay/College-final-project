@@ -7,6 +7,7 @@ import {
   query,
   where,
   getDocs,
+  serverTimestamp,
 } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { db } from '../firebase.config';
@@ -21,6 +22,8 @@ function ConfirmRental() {
 
   const paypalRef = useRef();
   const [numberOfDays, setNumberOfDays] = useState(0);
+  const [showPayLaterConfirmation, setShowPayLaterConfirmation] =
+    useState(false);
 
   useEffect(() => {
     const loadPayPalButton = () => {
@@ -33,7 +36,7 @@ function ConfirmRental() {
                   {
                     amount: {
                       value: totalSum,
-                      currency_code: 'ILS', // Set currency to ILS
+                      currency_code: 'ILS',
                     },
                   },
                 ],
@@ -48,7 +51,7 @@ function ConfirmRental() {
                 alert(
                   `Payment successful! Your confirmation number is: ${confirmationNumber}. Dates: ${startDate.toLocaleDateString()} to ${endDate.toLocaleDateString()} (${numberOfDays} days).`
                 );
-                navigate('/my-requests'); // Navigate to RequestsMade after alert
+                navigate('/my-requests');
               });
             },
             onError: (err) => {
@@ -64,15 +67,13 @@ function ConfirmRental() {
       loadPayPalButton();
     }, 500);
 
-    // Calculate the number of days when component loads
     setNumberOfDays(calculateNumberOfDays(startDate, endDate));
 
     return () => clearTimeout(timeout);
   }, [totalSum, startDate, endDate]);
 
-  const generateConfirmationNumber = () => {
-    return Math.floor(10000 + Math.random() * 90000);
-  };
+  const generateConfirmationNumber = () =>
+    Math.floor(10000 + Math.random() * 90000);
 
   const isConfirmationUnique = async (confirmationNumber) => {
     const q = query(
@@ -96,9 +97,7 @@ function ConfirmRental() {
   const handleSubmitRequest = async (status) => {
     try {
       const userUid = auth.currentUser.uid;
-
       const requestId = uuidv4();
-
       const confirmationNumber = await getUniqueConfirmationNumber();
 
       const requestData = {
@@ -116,12 +115,13 @@ function ConfirmRental() {
         userRef: userUid,
         status,
         confirmation: confirmationNumber,
+        timestamp: serverTimestamp(), // Add timestamp field
       };
 
       await setDoc(doc(db, 'requests', requestId), requestData);
 
       toast.success(`Request submitted successfully with status: ${status}`);
-      return confirmationNumber; // Return the confirmation number
+      return confirmationNumber;
     } catch (error) {
       console.error('Error submitting request:', error);
       toast.error('Failed to submit request.');
@@ -130,8 +130,16 @@ function ConfirmRental() {
 
   const calculateNumberOfDays = (start, end) => {
     const timeDiff = end.getTime() - start.getTime();
-    const daysDiff = timeDiff / (1000 * 3600 * 24); // Convert milliseconds to days
-    return Math.ceil(daysDiff); // Round up to the nearest whole day
+    const daysDiff = timeDiff / (1000 * 3600 * 24);
+    return Math.ceil(daysDiff);
+  };
+
+  const handlePayLater = async () => {
+    const confirmationNumber = await handleSubmitRequest('pending');
+    alert(
+      `Your confirmation number is: ${confirmationNumber}. Dates: ${startDate.toLocaleDateString()} to ${endDate.toLocaleDateString()} (${numberOfDays} days).`
+    );
+    navigate('/my-requests');
   };
 
   const styles = {
@@ -202,11 +210,28 @@ function ConfirmRental() {
       width: '100%',
       marginTop: '20px',
     },
+    confirmationPopup: {
+      position: 'fixed',
+      top: '50%',
+      left: '50%',
+      transform: 'translate(-50%, -50%)',
+      padding: '20px',
+      backgroundColor: '#fff',
+      borderRadius: '12px',
+      boxShadow: '0 6px 18px rgba(0, 0, 0, 0.1)',
+      textAlign: 'center',
+      zIndex: 1000,
+    },
+    overlay: {
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      width: '100%',
+      height: '100%',
+      backgroundColor: 'rgba(0, 0, 0, 0.3)',
+      zIndex: 999,
+    },
   };
-
-  if (!listing) {
-    return <div>Loading listing...</div>;
-  }
 
   return (
     <div style={styles.container}>
@@ -237,19 +262,45 @@ function ConfirmRental() {
           Cancel
         </button>
         <button
-          onClick={async () => {
-            const confirmationNumber = await handleSubmitRequest('pending');
-            alert(
-              `Your confirmation number is: ${confirmationNumber}. Dates: ${startDate.toLocaleDateString()} to ${endDate.toLocaleDateString()} (${numberOfDays} days).`
-            );
-            navigate('/my-requests'); // Navigate to RequestsMade after alert
-          }}
+          onClick={() => setShowPayLaterConfirmation(true)}
           style={styles.button}
         >
           Pay Later
         </button>
       </div>
       <div ref={paypalRef} style={styles.paypalButton}></div>
+
+      {showPayLaterConfirmation && (
+        <>
+          <div
+            style={styles.overlay}
+            onClick={() => setShowPayLaterConfirmation(false)}
+          ></div>
+          <div style={styles.confirmationPopup}>
+            <p>
+              "Choosing to pay later means that if someone else rents this car
+              and pays online, your request could be canceled. Would you like to
+              proceed with the 'Pay Later' option?"
+            </p>
+            <button
+              onClick={handlePayLater}
+              style={{ ...styles.button, marginTop: '10px' }}
+            >
+              Confirm Pay Later
+            </button>
+            <button
+              onClick={() => setShowPayLaterConfirmation(false)}
+              style={{
+                ...styles.button,
+                ...styles.buttonCancel,
+                marginTop: '10px',
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }

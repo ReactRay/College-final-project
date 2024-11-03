@@ -138,7 +138,7 @@ function Listing() {
   const styles = {
     container: {
       padding: '20px',
-      maxWidth: '1200px',
+      maxWidth: '1500px',
       margin: '0 auto',
       backgroundColor: '#fff',
       borderRadius: '12px',

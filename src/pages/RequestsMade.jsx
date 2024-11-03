@@ -8,6 +8,7 @@ import {
   getDocs,
   doc,
   getDoc,
+  orderBy,
 } from 'firebase/firestore';
 import { db } from '../firebase.config';
 
@@ -30,7 +31,8 @@ function RequestsMade() {
     const fetchRequests = async () => {
       const q = query(
         collection(db, 'requests'),
-        where('userRef', '==', auth.currentUser.uid)
+        where('userRef', '==', auth.currentUser.uid),
+        orderBy('timestamp', 'desc') // Sort requests by timestamp
       );
 
       const querySnap = await getDocs(q);
@@ -40,7 +42,7 @@ function RequestsMade() {
       });
 
       setRequests(fetchedRequests);
-      setFilteredRequests(fetchedRequests); // Initialize with all requests
+      setFilteredRequests(fetchedRequests);
 
       const listingData = {};
       for (const request of fetchedRequests) {
@@ -59,7 +61,6 @@ function RequestsMade() {
   }, [auth.currentUser.uid]);
 
   useEffect(() => {
-    // Automatically filter results when filters change
     const filtered = requests.filter((request) => {
       const { brand, model, startDate, endDate, confirmation } = filters;
       const requestStartDate = request.data.startDate.toDate();
@@ -159,10 +160,17 @@ function RequestsMade() {
       fontSize: '16px',
       marginBottom: '5px',
     },
-    status: {
+    status: (status) => ({
       fontWeight: 'bold',
-      color: '#007BFF',
-    },
+      color:
+        status === 'pending'
+          ? '#f1c40f'
+          : status === 'active'
+          ? '#27ae60'
+          : status === 'canceled'
+          ? '#e74c3c'
+          : '#3498db', // Blue for "finished"
+    }),
     goBackButton: {
       padding: '10px 20px',
       fontSize: '16px',
@@ -261,7 +269,13 @@ function RequestsMade() {
                   <p style={styles.detailItem}>
                     Confirmation Number: {request.data.confirmation}
                   </p>
-                  <p style={{ ...styles.detailItem, ...styles.status }}>
+                  <p style={styles.detailItem}>
+                    Request Made:{' '}
+                    {request.data.timestamp
+                      ? request.data.timestamp.toDate().toLocaleString()
+                      : 'N/A'}
+                  </p>
+                  <p style={styles.status(request.data.status)}>
                     Status: {request.data.status}
                   </p>
                 </div>

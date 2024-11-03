@@ -44,8 +44,17 @@ function AdminRequests() {
       });
     }
 
-    setRequests(fetchedRequests);
-    setFilteredRequests(fetchedRequests);
+    // Separate pending requests and sort the rest by timestamp
+    const pendingRequests = fetchedRequests.filter(
+      (req) => req.data.status === 'pending'
+    );
+    const otherRequests = fetchedRequests
+      .filter((req) => req.data.status !== 'pending')
+      .sort((a, b) => b.data.timestamp.toDate() - a.data.timestamp.toDate());
+
+    const sortedRequests = [...pendingRequests, ...otherRequests];
+    setRequests(sortedRequests);
+    setFilteredRequests(sortedRequests);
     setLoading(false);
   };
 
@@ -54,19 +63,7 @@ function AdminRequests() {
   }, []);
 
   useEffect(() => {
-    const pendingRequests = requests.filter(
-      (req) => req.data.status === 'pending'
-    );
-    const otherRequests = requests.filter(
-      (req) => req.data.status !== 'pending'
-    );
-
-    otherRequests.sort(
-      (a, b) => a.data.startDate.toDate() - b.data.startDate.toDate()
-    );
-
-    const sortedRequests = [...pendingRequests, ...otherRequests];
-    setFilteredRequests(sortedRequests);
+    applyFilters();
   }, [requests]);
 
   const applyFilters = () => {
@@ -155,7 +152,7 @@ function AdminRequests() {
     container: {
       padding: '30px',
       maxWidth: '1200px',
-      margin: '40px auto',
+      margin: '40px auto 150px',
       backgroundColor: '#f9f9f9',
       borderRadius: '10px',
       boxShadow: '0 6px 18px rgba(0, 0, 0, 0.06)',
@@ -229,6 +226,19 @@ function AdminRequests() {
       color: '#2c3e50',
       marginBottom: '6px',
     },
+    status: (status) => ({
+      fontSize: '16px',
+      fontWeight: 'bold',
+      color:
+        status === 'pending'
+          ? '#f1c40f'
+          : status === 'active'
+          ? '#27ae60'
+          : status === 'canceled'
+          ? '#e74c3c'
+          : '#3498db', // default to blue for "finished"
+      marginBottom: '6px',
+    }),
     buttons: {
       display: 'flex',
       gap: '10px',
@@ -349,7 +359,15 @@ function AdminRequests() {
                 <p style={styles.detailText}>
                   Confirmation Number: {request.data.confirmation}
                 </p>
-                <p style={styles.detailText}>Status: {request.data.status}</p>
+                <p style={styles.detailText}>
+                  Request Made:{' '}
+                  {request.data.timestamp
+                    ? request.data.timestamp.toDate().toLocaleString()
+                    : 'N/A'}
+                </p>
+                <p style={styles.status(request.data.status)}>
+                  Status: {request.data.status}
+                </p>
               </div>
               {request.data.status === 'pending' && (
                 <div style={styles.buttons}>
